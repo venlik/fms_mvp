@@ -1,0 +1,210 @@
+import 'package:finance_management_system/backend/drafts/draft_business.dart';
+import 'package:finance_management_system/backend/enums/counter_key.dart';
+import 'package:finance_management_system/backend/enums/entity_type.dart';
+import 'package:finance_management_system/backend/enums/source.dart';
+import 'package:finance_management_system/backend/enums/storage_group.dart';
+import 'package:finance_management_system/backend/exceptions.dart';
+import 'package:finance_management_system/backend/models/business.dart';
+import 'package:finance_management_system/backend/models/identifier.dart';
+import 'package:finance_management_system/backend/models/logo.dart';
+import 'package:finance_management_system/backend/repositories/business_lookup.dart';
+import 'package:finance_management_system/backend/services/counter_service.dart';
+import 'package:finance_management_system/backend/storage/app_storage.dart';
+
+/// Persists the app's business profile(s). Typically a singleton,
+/// but modelled as a collection so multiple businesses are possible.
+class BusinessRepository implements BusinessLookup {
+  final Storage _storage;
+  final CounterService _counters;
+  final Map<Identifier<Business>, Business> _entries = {};
+  bool _loaded = false;
+
+  static const _group = StorageGroup.businesses;
+
+  BusinessRepository._(this._storage, this._counters);
+
+  static Future<BusinessRepository> create({
+    required Storage storage,
+    required CounterService counters,
+  }) async {
+    final repo = BusinessRepository._(storage, counters);
+    await repo._load();
+    return repo;
+  }
+
+  // ── draft → entity ───────────────────────────────────────────────
+
+  DraftBusiness createDraft({
+    String name = '',
+    Logo? logo,
+    String phoneNumber = '',
+    String email = '',
+    String serviceLocation = '',
+    String configuredCurrency = 'KES',
+  }) => DraftBusiness(
+    name: name,
+    logo: logo,
+    phoneNumber: phoneNumber,
+    email: email,
+    serviceLocation: serviceLocation,
+    configuredCurrency: configuredCurrency,
+  );
+
+  Future<Business> commit(DraftBusiness draft) async {
+    if (!draft.isValid) {
+      throw InvalidState('Business draft is incomplete');
+    }
+    if (await _exists(draft.contentHash)) {
+      throw AlreadyExists(
+        'Business of C_HASH: ${draft.contentHash} already exists',
+      );
+    }
+    final n = await _counters.allocate(CounterKey.business);
+    final business = Business(
+      id: Identifier<Business>(n, EntityType.business),
+      name: draft.name,
+      logo: draft.logo,
+      phoneNumber: draft.phoneNumber,
+      email: draft.email,
+      serviceLocation: draft.serviceLocation,
+      configuredCurrency: draft.configuredCurrency,
+    );
+    await add(business);
+    return business;
+  }
+
+  // ── already-identified ───────────────────────────────────────────
+
+  Future<void> add(Business business) async {
+    await _ensureLoaded();
+    if (await _exists(business.contentHash) || _entries[business.id] != null) {
+      throw AlreadyExists(
+        'Business of C_HASH: ${business.contentHash} already exists',
+      );
+    }
+    _entries[business.id] = business;
+    await _save();
+  }
+
+  // ── lookup ───────────────────────────────────────────────────────
+
+  @override
+  Future<Business?> findById(Identifier<Business> id) async {
+    await _ensureLoaded();
+    return _entries[id];
+  }
+
+  @override
+  Future<Map<Identifier<Business>, Business>> findByIds(
+    Iterable<Identifier<Business>> ids,
+  ) async {
+    await _ensureLoaded();
+    return {
+      for (final id in ids)
+        if (_entries[id] case final b?) id: b,
+    };
+  }
+
+  Future<Business?> findSingleton() async {
+    await _ensureLoaded();
+    return _entries.values.firstOrNull;
+  }
+
+  // ── mutations ──────────────────────────────────────────────────
+  Future<void> remove(Business business) async {
+    await _ensureLoaded();
+    final id = business.id;
+    _entries.update(
+      id,
+      (business) => business.copyWith(isDeleted: true),
+      ifAbsent: () => throw NotFound("Business[${business.id}] not found"),
+    );
+  }
+
+  ///Replaces an old business with a new business,
+  ///both new and old must share the same identifier
+  Future<void> edit(Business oldBusiness, Business newBusiness) async {
+    await _ensureLoaded();
+    final id = oldBusiness.id;
+    final nbId = newBusiness.id;
+    if (id != nbId) {
+      throw StateError(
+        "Id mismatch ==> (newBusiness.id=$nbId) != (oldBusiness.id= $id)",
+      );
+    }
+    _entries.update(
+      id,
+      (business) => newBusiness,
+      ifAbsent: () => throw NotFound("Business[$id] not found"),
+    );
+  }
+
+  // ── persistence ──────────────────────────────────────────────────
+
+  Future<void> _ensureLoaded() async {
+    if (_loaded) return;
+    await _load();
+    _loaded = true;
+  }
+
+  Future<void> _load() async {
+    final raw = await _storage.readData(_group);
+    final list = raw['businesses'];
+    if (list is! List) return;
+    _entries
+      ..clear()
+      ..addEntries(
+        list.cast<Map<String, dynamic>>().map((json) {
+          final b = _deserialize(json);
+          return MapEntry(b.id, b);
+        }),
+      );
+  }
+
+  Future<bool> _exists(int contentHash) async {
+    await _ensureLoaded();
+    for (final business in _entries.values) {
+      if (business.contentHash == contentHash) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Business _deserialize(Map<String, dynamic> json) => Business(
+    id: Identifier<Business>(json['id'] as int, EntityType.business),
+    name: json['name'] as String,
+    logo: json['logo'] != null
+        ? Logo(
+            path: (json['logo'] as Map<String, dynamic>)['path'] as String,
+            source: Source.fromLabel(
+              (json['logo'] as Map<String, dynamic>)['source'] as String,
+            ) as Source,
+          )
+        : null,
+    phoneNumber: json['phoneNumber'] as String,
+    email: json['email'] as String,
+    serviceLocation: json['serviceLocation'] as String,
+    configuredCurrency: json['configuredCurrency'] as String,
+    isDeleted: json['isDeleted'] as bool?,
+  );
+
+  Map<String, dynamic> _serialize(Business b) => {
+    'id': b.id.number,
+    'name': b.name,
+    'logo': b.logo != null
+        ? {'path': b.logo!.path, 'source': b.logo!.source.label}
+        : null,
+    'phoneNumber': b.phoneNumber,
+    'email': b.email,
+    'serviceLocation': b.serviceLocation,
+    'configuredCurrency': b.configuredCurrency,
+    'isDeleted': b.isDeleted,
+  };
+
+  Future<void> _save() async {
+    final raw = await _storage.readData(_group);
+    raw['businesses'] = _entries.values.map(_serialize).toList();
+    await _storage.writeData(_group, raw);
+  }
+}

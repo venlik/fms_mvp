@@ -1,0 +1,277 @@
+{
+  "main": {
+    "id": "e3c4a7c8b1f180f1",
+    "type": "split",
+    "children": [
+      {
+        "id": "cef662c3682d8e80",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "cca0554f9725efb7",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "04-Application/billing/use-cases/UC-REP-001-Reporting-Services.md",
+                "mode": "preview",
+                "source": false,
+                "backlinks": true,
+                "backlinkOpts": {
+                  "collapseAll": false,
+                  "extraContext": false,
+                  "sortOrder": "alphabetical",
+                  "showSearch": false,
+                  "searchQuery": "",
+                  "backlinkCollapsed": false,
+                  "unlinkedCollapsed": true
+                }
+              },
+              "icon": "lucide-file",
+              "title": "UC-REP-001-Reporting-Services"
+            }
+          },
+          {
+            "id": "eefc769c8ada763a",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "04-Application/billing/use-cases/UC-CUS-006-View-Customer-Credit-History.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "UC-CUS-006-View-Customer-Credit-History"
+            }
+          },
+          {
+            "id": "e1f39620b861a361",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "04-Application/billing/use-cases/UC-CUS-005-View-Customer-Credit.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "UC-CUS-005-View-Customer-Credit"
+            }
+          },
+          {
+            "id": "76e0b3afa5a4664c",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
+            }
+          }
+        ],
+        "currentTab": 3
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "bd0e9528be081bf0",
+    "type": "split",
+    "children": [
+      {
+        "id": "532065dc00aa44d8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f960dadb4184cf0f",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "4fdbce01f0c4fbc2",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "50181b306da54d90",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "3e39fb53f90ee579",
+    "type": "split",
+    "children": [
+      {
+        "id": "5d0eba9dd594c290",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "18bf1cf04d741324",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "a72e088b291e6c03",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "03-domain/billing/aggregates/Business.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "9b99cbec25154e43",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "22a6f7cbe540b6fc",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "b8fbfd2a77ebdcb7",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "03-domain/billing/aggregates/Business.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "f960dadb4184cf0f",
+  "lastOpenFiles": [
+    "01-Requirements/billing/Payment.md",
+    "01-Requirements/billing/Billing-Policies.md",
+    "04-Application/billing/use-cases/UC-INV-006-Apply-Customer-Credit.md",
+    "04-Application/shared/Transaction-Management.md",
+    "03-domain/billing/Customer-Credit-Workflow.md",
+    "01-Requirements/billing/Business-Policies.md",
+    "04-Application/billing/Document-Number-Assignment.md",
+    "04-Application/shared/Application-Services.md",
+    "04-Application/billing/use-cases/UC-INV-002-Edit-Invoice.md",
+    "04-Application/billing/use-cases/UC-INV-007-Issue-Invoice.md",
+    "01-Requirements/common/Use-Cases.md",
+    "04-Application/billing/use-cases/UC-INV-001-Create-Invoice.md",
+    "04-Application/billing/use-cases/UC-REP-001-Reporting-Services.md",
+    "04-Application/billing/use-cases/UC-CUS-006-View-Customer-Credit-History.md",
+    "04-Application/billing/use-cases/UC-CUS-005-View-Customer-Credit.md",
+    "04-Application/billing/use-cases/UC-CUS-003-Archive-Customer.md",
+    "04-Application/billing/use-cases/UC-CUS-001-Register-Customer.md",
+    "01-Requirements/billing/Document-Numbering.md",
+    "04-Application/billing/use-cases/UC-INV-005-Duplicate-Invoice.md",
+    "04-Application/billing/use-cases/UC-REC-001-Record-Payment.md",
+    "04-Application/shared/Cross-Aggregate-Coordination.md",
+    "00-Overview/Terminology.md",
+    "00-Overview/Glossary.md",
+    "04-Application/billing/use-cases/UC-REC-002-Generate-Receipt.md",
+    "04-Application/shared/Application-Overview.md",
+    "04-Application/billing/use-cases",
+    "04-Application/shared/Result-Propagation.md",
+    "04-Application/billing",
+    "04-Application/billing/use-cases",
+    "04-Application/shared",
+    "Untitled",
+    "04-Application",
+    "docs/03-domain/shared",
+    "docs/03-domain",
+    "docs"
+  ]
+}
