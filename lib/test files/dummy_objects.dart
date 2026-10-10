@@ -1,4 +1,5 @@
 import 'package:finance_management_system/backend/drafts/draft_business.dart';
+import 'package:finance_management_system/backend/drafts/draft_customer.dart';
 import 'package:finance_management_system/backend/drafts/draft_item.dart';
 import 'package:finance_management_system/backend/enums/source.dart';
 import 'package:finance_management_system/backend/models/logo.dart';
@@ -107,13 +108,34 @@ List<DraftItem> popularClothingItems = [
   ),
 ];
 
-Future<DraftBusiness> getBusiness() async {
-  return DraftBusiness(
-    name: 'Venlik',
-    logo: Logo(path: 'assets/logo.jpg', source: Source.asset),
-    phoneNumber: '0719179674',
-    email: 'venlik.dev@gmail.com',
-    serviceLocation: "Karatina",
-    configuredCurrency: "KES",
-  );
-}
+final dummyBusiness = DraftBusiness(
+  name: 'Venlik',
+  logo: Logo(path: 'assets/logo.jpg', source: Source.asset),
+  phoneNumber: '0719179674',
+  email: 'venlik.dev@gmail.com',
+  serviceLocation: "Karatina",
+  configuredCurrency: "KES",
+);
+
+final dummyBusiness1 = DraftBusiness(
+  name: "KONSOLE",
+  logo: Logo(path: 'assets/logo.jpg', source: Source.file),
+  phoneNumber: '000-222-333-546',
+  email: "konsole@fedora.plasma",
+  serviceLocation: 'hp elitebook 840 g5',
+  configuredCurrency: 'KES',
+);
+
+final dummyCustomer = DraftCustomer(
+  name: "Kelvin",
+  address: "Karatina",
+  phoneNumber: "222-666-233-456",
+  email: 'nobody@people.collection',
+);
+
+final dummyCustomer1 = DraftCustomer(
+  name: "Christine",
+  address: "Nairobi",
+  email: 'somebody@people.collection',
+  phoneNumber: "056-473-583-045",
+);

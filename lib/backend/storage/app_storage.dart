@@ -29,17 +29,49 @@ abstract class Storage {
   }
 
   Future<File> saveDocument({required String name, required List<int> bytes});
+
   Future<void> writeData(StorageGroup group, Map<String, dynamic> data) async {
-    final file = await dataPath(group);
-    await file.parent.create(recursive: true);
+    final original = await dataPath(group);
+    await original.parent.create(recursive: true);
+
+    final path = original.path;
+    final tmp = File('$path.tmp');
+    final backup = File('$path.old');
 
     final json = const JsonEncoder.withIndent('  ').convert(data);
 
-    final tmp = File('${file.path}.tmp');
-    await tmp.writeAsString(json, flush: true);
-    if (await file.exists()) {
-      await file.delete();
+    var originalBackedUp = false;
+    var newInstalled = false;
+
+    try {
+      await tmp.writeAsString(json, flush: true);
+
+      if (await original.exists()) {
+        // prevent silently overwriting an existing recovery backup.
+        if (await backup.exists()) {
+          throw FileSystemException(
+            'Existing backup requires recovery',
+            backup.path,
+          );
+        }
+
+        await original.rename(backup.path);
+        originalBackedUp = true;
+      }
+
+      await tmp.rename(path);
+      newInstalled = true;
+
+      if (originalBackedUp) {
+        await backup.delete();
+      }
+    } catch (_) {
+      if (originalBackedUp && !newInstalled) {
+        if (!await original.exists() && await backup.exists()) {
+          await backup.rename(path);
+        }
+      }
+      rethrow;
     }
-    await tmp.rename(file.path);
   }
 }

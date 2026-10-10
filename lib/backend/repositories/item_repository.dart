@@ -68,6 +68,21 @@ class ItemRepository implements ItemLookup {
     return item;
   }
 
+  Future<void> commitAll(List<DraftItem> drafts) async {
+    for (final draft in drafts) {
+      try {
+        await commit(draft);
+      } on AlreadyExists catch (_) {
+        print(
+          "skipped ${draft.contentHash} [exists]",
+        ); //TODO: remove print statement
+        continue;
+      } catch (_) {
+        rethrow;
+      }
+    }
+  }
+
   // ── already-identified ──────────────────────────────────────────
 
   Future<void> add(Item item) async {

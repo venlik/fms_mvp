@@ -23,6 +23,8 @@ class ItemService {
   );
 
   Future<Item> commit(DraftItem draft) => _items.commit(draft);
+  Future<void> commitAll(List<DraftItem> drafts) async =>
+      _items.commitAll(drafts);
 
   // ── queries ─────────────────────────────────────────────────────
 
@@ -36,6 +38,6 @@ class ItemService {
   Future<Iterable<Item>> findAll() async => await _items.findAll();
 
   // ── mutations ───────────────────────────────────────────────────
-  Future<void> add(Item item) => _items.add(item);
+  Future<void> add(Item item) async => await _items.add(item);
   Future<void> remove(Item item) => _items.remove(item);
 }
