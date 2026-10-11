@@ -1,12 +1,17 @@
+import 'package:finance_management_system/backend/details/customer_details_comparison.dart';
 import 'package:finance_management_system/backend/models/identifier.dart';
 
-class Customer implements Entity {
+class Customer with CustomerDetailsComparison implements Entity {
   final Identifier<Customer> id;
+  @override
   final String name;
   final String address;
+  @override
   final String phoneNumber;
   final String? email;
   final bool isDeleted;
+
+  static const _notSet = Object();
 
   const Customer({
     required this.id,
@@ -21,22 +26,16 @@ class Customer implements Entity {
     String? name,
     String? address,
     String? phoneNumber,
-    String? email,
+    Object? email = _notSet,
     bool? isDeleted,
   }) => Customer(
     id: id,
     name: name ?? this.name,
     address: address ?? this.address,
     phoneNumber: phoneNumber ?? this.phoneNumber,
-    email: email ?? this.email,
+    email: identical(email, _notSet) ? this.email : email as String?,
     isDeleted: isDeleted ?? this.isDeleted,
   );
-
-  int get contentHash =>
-      name.hashCode ^
-      address.hashCode ^
-      phoneNumber.hashCode ^
-      email.hashCode << 10;
 
   @override
   bool operator ==(Object other) =>

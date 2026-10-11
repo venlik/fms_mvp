@@ -1,6 +1,6 @@
+import 'package:finance_management_system/backend/details/item_details_comparison.dart';
 import 'package:finance_management_system/backend/drafts/draft_item.dart';
 import 'package:finance_management_system/backend/enums/counter_key.dart';
-import 'package:finance_management_system/backend/enums/entity_type.dart';
 import 'package:finance_management_system/backend/enums/storage_group.dart';
 import 'package:finance_management_system/backend/exceptions.dart';
 import 'package:finance_management_system/backend/models/identifier.dart';
@@ -14,7 +14,7 @@ class ItemRepository implements ItemLookup {
   final CounterService _counterService;
 
   static const _group = StorageGroup.items;
-  final Set<Item> _entries = {};
+  final Map<Identifier<Item>, Item> _entries = {};
   bool _loaded = false;
 
   ItemRepository._(this._storage, this._counterService);
@@ -32,7 +32,7 @@ class ItemRepository implements ItemLookup {
 
   Future<Identifier<Item>> _nextId() async {
     final n = await _counterService.allocate(CounterKey.item);
-    return Identifier<Item>(n, EntityType.item);
+    return Identifier<Item>(n);
   }
 
   // ── draft → entity ──────────────────────────────────────────────
@@ -52,9 +52,9 @@ class ItemRepository implements ItemLookup {
       throw InvalidState('Item draft is incomplete');
     }
 
-    if (await _exists(draft.contentHash)) {
+    if (await _contentExists(draft)) {
       throw AlreadyExists(
-        'Item of C_HASH: ${draft.contentHash} already exists',
+        'Item with details (${draft.details}) already exists',
       );
     }
     final id = await _nextId();
@@ -74,7 +74,7 @@ class ItemRepository implements ItemLookup {
         await commit(draft);
       } on AlreadyExists catch (_) {
         print(
-          "skipped ${draft.contentHash} [exists]",
+          "skipped: [${draft.details}] reason: [exists]",
         ); //TODO: remove print statement
         continue;
       } catch (_) {
@@ -87,21 +87,21 @@ class ItemRepository implements ItemLookup {
 
   Future<void> add(Item item) async {
     await _ensureLoaded();
-    if (_entries.contains(item) || await _exists(item.contentHash)) {
-      throw AlreadyExists('Item of C_HASH: ${item.contentHash} already exists');
+    if (_entries.containsKey(item.id) || await _contentExists(item)) {
+      throw AlreadyExists(
+        'Item with details (${item.details}) already exists',
+      );
     }
-    _entries.add(item);
+    _entries[item.id] = item;
     await _save();
   }
 
   Future<void> remove(Item item) async {
     await _ensureLoaded();
-    if (!_entries.contains(item)) {
+    if (!_entries.containsKey(item.id)) {
       throw NotFound('Item ${item.id} not found');
     }
-    _entries
-      ..remove(item)
-      ..add(item.copyWith(isDeleted: true));
+    _entries[item.id] = item.copyWith(isDeleted: true);
     await _save();
   }
 
@@ -110,36 +110,25 @@ class ItemRepository implements ItemLookup {
   @override
   Future<Item?> findById(Identifier<Item> id) async {
     await _ensureLoaded();
-    try {
-      return _entries.firstWhere((it) => it.id == id);
-    } catch (_) {
-      return null;
-    }
+    return _entries[id];
   }
 
   Future<Iterable<Item>> findByName(String name) async {
     await _ensureLoaded();
     final q = name.toLowerCase();
-    try {
-      return _entries.where((it) => it.name.toLowerCase() == q);
-    } catch (e) {
-      throw Exception(e);
-    }
+    return _entries.values.where((it) => it.name.toLowerCase() == q);
   }
 
   Future<Iterable<Item>> findAll() async {
     await _ensureLoaded();
-    return Set.unmodifiable(_entries);
+    return List.unmodifiable(_entries.values);
   }
 
-  Future<bool> _exists(int contentHash) async {
+  Future<bool> _contentExists(ItemDetailsComparison candidate) async {
     await _ensureLoaded();
-    for (final item in _entries) {
-      if (item.contentHash == contentHash) {
-        return true;
-      }
-    }
-    return false;
+    return _entries.values
+        .where((it) => !it.isDeleted)
+        .any((it) => it.details == candidate.details);
   }
 
   // ── internals ───────────────────────────────────────────────────
@@ -152,17 +141,22 @@ class ItemRepository implements ItemLookup {
     if (list is List) {
       _entries
         ..clear()
-        ..addAll(list.cast<Map<String, dynamic>>().map(_deserialize));
+        ..addEntries(
+          list.cast<Map<String, dynamic>>().map((json) {
+            final it = _deserialize(json);
+            return MapEntry(it.id, it);
+          }),
+        );
     }
     _loaded = true;
   }
 
   Item _deserialize(Map<String, dynamic> json) => Item(
-    id: Identifier<Item>(json['id'] as int, EntityType.item),
+    id: Identifier<Item>(json['id'] as int),
     name: json['name'] as String,
     description: json['description'] as String,
     priceInCents: json['priceInCents'] as int,
-    isDeleted: json['isDeleted'] as bool?,
+    isDeleted: json['isDeleted'] as bool? ?? false,
   );
 
   Map<String, dynamic> _serialize(Item it) => {
@@ -175,7 +169,7 @@ class ItemRepository implements ItemLookup {
 
   Future<void> _save() async {
     await _storage.writeData(_group, {
-      'items': _entries.map(_serialize).toList(),
+      'items': _entries.values.map(_serialize).toList(),
     });
   }
 }

@@ -1,16 +1,23 @@
-import 'package:finance_management_system/backend/models/document_number.dart';
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:finance_management_system/backend/details/payment_details_comparison.dart';
 import 'package:finance_management_system/backend/enums/payment_method.dart';
+import 'package:finance_management_system/backend/models/document_number.dart';
 import 'package:finance_management_system/backend/models/identifier.dart';
 import 'package:finance_management_system/backend/models/invoice.dart';
 
-class Payment implements Entity {
+class Payment with PaymentDetailsComparison implements Entity {
   final Identifier<Payment> id;
+  @override
   final int amountInCents;
+  @override
   final PaymentMethod method;
+  @override
   final DocumentNumber<Invoice> invoiceNumber;
   final DateTime date;
+  @override
   final String reference;
   final String? notes;
+  final bool isDeleted;
 
   const Payment({
     required this.id,
@@ -20,13 +27,10 @@ class Payment implements Entity {
     required this.date,
     required this.reference,
     this.notes,
+    this.isDeleted = false,
   });
 
- int get contentHash =>
-      amountInCents.hashCode ^
-      method.hashCode ^
-      invoiceNumber.hashCode ^
-      reference.hashCode << 10;
+  static const _notSet = Object();
 
   @override
   bool operator ==(Object other) =>
@@ -34,4 +38,26 @@ class Payment implements Entity {
 
   @override
   int get hashCode => id.hashCode;
+
+  Payment copyWith({
+    Identifier<Payment>? id,
+    int? amountInCents,
+    PaymentMethod? method,
+    DocumentNumber<Invoice>? invoiceNumber,
+    DateTime? date,
+    String? reference,
+    Object? notes = _notSet,
+    bool? isDeleted,
+  }) {
+    return Payment(
+      id: id ?? this.id,
+      amountInCents: amountInCents ?? this.amountInCents,
+      method: method ?? this.method,
+      invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+      date: date ?? this.date,
+      reference: reference ?? this.reference,
+      notes: identical(notes, _notSet) ? this.notes : notes as String?,
+      isDeleted: isDeleted ?? this.isDeleted,
+    );
+  }
 }

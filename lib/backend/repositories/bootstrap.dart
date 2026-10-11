@@ -8,6 +8,7 @@ import 'package:finance_management_system/backend/services/counter_service.dart'
 import 'package:finance_management_system/backend/storage/app_storage.dart';
 
 class Repositories({
+  required final CounterService counters,
   required final BusinessRepository businesses,
   required final CustomerRepository customers,
   required final ItemRepository items,
@@ -46,6 +47,7 @@ Future<Repositories> bootstrapRepositories(Storage storage) async {
   );
 
   return Repositories(
+    counters: counters,
     businesses: businesses,
     customers: customers,
     items: items,

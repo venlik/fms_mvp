@@ -1,18 +1,28 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:finance_management_system/backend/details/invoice_details_comparison.dart';
 import 'package:finance_management_system/backend/enums/payment_terms.dart';
 import 'package:finance_management_system/backend/models/business.dart';
 import 'package:finance_management_system/backend/models/customer.dart';
 import 'package:finance_management_system/backend/models/document_number.dart';
 import 'package:finance_management_system/backend/models/invoice_item.dart';
 
-class Invoice {
+class Invoice with InvoiceDetailsComparison {
   final DocumentNumber<Invoice> documentNumber;
+  @override
   final DateTime date;
+  @override
   final Business business;
+  @override
   final Customer customer;
+  @override
   final Set<InvoiceItem> items;
-  final PaymentTerms paymentTerms;
+
+  @override
+  final PaymentTerms terms;
   final String? notes;
+  final bool isDeleted;
+
+  static const _notSet = Object();
 
   Invoice({
     required this.documentNumber,
@@ -20,32 +30,32 @@ class Invoice {
     required this.business,
     required this.customer,
     required Set<InvoiceItem> items,
-    required this.paymentTerms,
+    required this.terms,
     this.notes,
+    this.isDeleted = false,
   }) : items = Set.unmodifiable(items);
 
-  DateTime get dueDate => paymentTerms.dueDate(date);
+  DateTime get dueDate => terms.dueDate(date);
 
-  Map<String, dynamic> toMap() {
-    return {
-      'documentNumber': documentNumber.id,
-      'date': date.toIso8601String(),
-      'businessId': business.id.number,
-      'customerId': customer.id.number,
-      'items': items
-          .map((it) => {'itemId': it.item.id.number, 'quantity': it.quantity})
-          .toList(),
-      'paymentTerms': paymentTerms.label,
-      'notes': notes,
-    };
+  Invoice copyWith({
+    DocumentNumber<Invoice>? documentNumber,
+    DateTime? date,
+    Business? business,
+    Customer? customer,
+    Set<InvoiceItem>? items,
+    PaymentTerms? terms,
+    Object? notes = _notSet,
+    bool? isDeleted,
+  }) {
+    return Invoice(
+      documentNumber: documentNumber ?? this.documentNumber,
+      date: date ?? this.date,
+      business: business ?? this.business,
+      customer: customer ?? this.customer,
+      items: items ?? this.items,
+      terms: terms ?? this.terms,
+      notes: identical(notes, _notSet) ? this.notes : notes as String?,
+      isDeleted: isDeleted ?? this.isDeleted,
+    );
   }
-
-  int get _itemsHash =>
-    items.fold(0, (h, item) => h ^ item.hashCode);
-
-  int get contentHash =>
-      business.contentHash ^
-      customer.contentHash ^
-      _itemsHash ^
-      paymentTerms.hashCode << 10;
 }

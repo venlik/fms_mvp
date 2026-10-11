@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:finance_management_system/backend/enums/storage_group.dart';
+import 'package:finance_management_system/backend/exceptions.dart';
 
 abstract class Storage {
   Future<File> dataPath(StorageGroup gp);
@@ -10,12 +11,8 @@ abstract class Storage {
 
   Future<Map<String, dynamic>> readData(StorageGroup group) async {
     var file = await dataPath(group);
-    if (!file.existsSync()) {
-      final originalPath = file.path;
-      file = File('$originalPath.tmp');
-    }
 
-    if (!await file.exists()) return {};
+    if (!await file.exists()) throw NotFound("${file.path} not found");
 
     try {
       final raw = await file.readAsString();

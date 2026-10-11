@@ -129,7 +129,11 @@ abstract class DocumentPdf {
     );
   }
 
-  pw.Widget _header(Invoice invoice, pw.MemoryImage? logo, String documentNumber) {
+  pw.Widget _header(
+    Invoice invoice,
+    pw.MemoryImage? logo,
+    String documentNumber,
+  ) {
     final b = invoice.business;
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -304,6 +308,7 @@ abstract class DocumentPdf {
       decoration: const pw.BoxDecoration(color: PdfColors.grey200),
       children: [
         _cell('Item', style: headerStyle),
+        _cell('Description', style: headerStyle),
         _cell('Quantity', style: headerStyle),
         _cell('Rate', style: headerStyle),
         _cell('Amount', style: headerStyle, align: pw.TextAlign.right),
@@ -313,6 +318,7 @@ abstract class DocumentPdf {
     pw.TableRow totalsRow(double total) => pw.TableRow(
       decoration: const pw.BoxDecoration(color: PdfColors.grey100),
       children: [
+        _cell('', style: headerStyle),
         _cell('', style: headerStyle),
         _cell('', style: headerStyle),
         _cell('Total', style: headerStyle, align: pw.TextAlign.right),
@@ -335,22 +341,19 @@ abstract class DocumentPdf {
         pw.Table(
           border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
           columnWidths: const {
-            0: pw.FlexColumnWidth(4),
-            1: pw.FlexColumnWidth(1.2),
-            2: pw.FlexColumnWidth(2),
-            3: pw.FlexColumnWidth(2.2),
+            0: pw.FlexColumnWidth(2),
+            1: pw.FlexColumnWidth(4),
+            2: pw.FlexColumnWidth(1.2),
+            3: pw.FlexColumnWidth(2),
+            4: pw.FlexColumnWidth(2.2),
           },
           children: <pw.TableRow>[
             headerRow(),
             for (final item in chunk)
               pw.TableRow(
                 children: [
-                  _cell(
-                    item.description.isEmpty
-                        ? item.name
-                        : '${item.name}\n${item.description}',
-                    style: bodyStyle,
-                  ),
+                  _cell(item.name, style: bodyStyle),
+                  _cell(item.description, style: bodyStyle),
                   _cell(DocFormat.number(item.quantity), style: bodyStyle),
                   _cell(
                     '$currency ${DocFormat.money(item.priceInCents / 100)}',

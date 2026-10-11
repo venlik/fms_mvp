@@ -1,6 +1,6 @@
+import 'package:finance_management_system/backend/details/business_details_comparison.dart';
 import 'package:finance_management_system/backend/drafts/draft_business.dart';
 import 'package:finance_management_system/backend/enums/counter_key.dart';
-import 'package:finance_management_system/backend/enums/entity_type.dart';
 import 'package:finance_management_system/backend/enums/source.dart';
 import 'package:finance_management_system/backend/enums/storage_group.dart';
 import 'package:finance_management_system/backend/exceptions.dart';
@@ -54,14 +54,14 @@ class BusinessRepository implements BusinessLookup {
     if (!draft.isValid) {
       throw InvalidState('Business draft is incomplete');
     }
-    if (await _exists(draft.contentHash)) {
+    if (await _contentExists(draft)) {
       throw AlreadyExists(
-        'Business of C_HASH: ${draft.contentHash} already exists',
+        'Business with details (${draft.details}) already exists',
       );
     }
     final n = await _counters.allocate(CounterKey.business);
     final business = Business(
-      id: Identifier<Business>(n, EntityType.business),
+      id: Identifier<Business>(n),
       name: draft.name,
       logo: draft.logo,
       phoneNumber: draft.phoneNumber,
@@ -77,9 +77,9 @@ class BusinessRepository implements BusinessLookup {
 
   Future<void> add(Business business) async {
     await _ensureLoaded();
-    if (await _exists(business.contentHash) || _entries[business.id] != null) {
+    if (await _contentExists(business) || _entries[business.id] != null) {
       throw AlreadyExists(
-        'Business of C_HASH: ${business.contentHash} already exists',
+        'Business with details (${business.details}) already exists',
       );
     }
     _entries[business.id] = business;
@@ -119,6 +119,7 @@ class BusinessRepository implements BusinessLookup {
       (business) => business.copyWith(isDeleted: true),
       ifAbsent: () => throw NotFound("Business[${business.id}] not found"),
     );
+    await _save();
   }
 
   ///Replaces an old business with a new business,
@@ -137,6 +138,7 @@ class BusinessRepository implements BusinessLookup {
       (business) => newBusiness,
       ifAbsent: () => throw NotFound("Business[$id] not found"),
     );
+    await _save();
   }
 
   // ── persistence ──────────────────────────────────────────────────
@@ -161,18 +163,16 @@ class BusinessRepository implements BusinessLookup {
       );
   }
 
-  Future<bool> _exists(int contentHash) async {
+  // BusinessRepository
+  Future<bool> _contentExists(BusinessDetailsComparison candidate) async {
     await _ensureLoaded();
-    for (final business in _entries.values) {
-      if (business.contentHash == contentHash) {
-        return true;
-      }
-    }
-    return false;
+    return _entries.values
+        .where((b) => !(b.isDeleted))
+        .any((b) => b.details == candidate.details);
   }
 
   Business _deserialize(Map<String, dynamic> json) => Business(
-    id: Identifier<Business>(json['id'] as int, EntityType.business),
+    id: Identifier<Business>(json['id'] as int),
     name: json['name'] as String,
     logo: json['logo'] != null
         ? Logo(
@@ -186,7 +186,7 @@ class BusinessRepository implements BusinessLookup {
     email: json['email'] as String,
     serviceLocation: json['serviceLocation'] as String,
     configuredCurrency: json['configuredCurrency'] as String,
-    isDeleted: json['isDeleted'] as bool?,
+    isDeleted: json['isDeleted'] as bool? ?? false,
   );
 
   Map<String, dynamic> _serialize(Business b) => {

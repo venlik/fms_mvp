@@ -1,5 +1,6 @@
 import 'package:finance_management_system/backend/enums/counter_key.dart';
 import 'package:finance_management_system/backend/enums/storage_group.dart';
+import 'package:finance_management_system/backend/exceptions.dart';
 import 'package:finance_management_system/backend/storage/app_storage.dart';
 
 /// Single source of truth for all monotonic integer sequences.
@@ -46,15 +47,12 @@ class CounterService {
   /// Full snapshot, for diagnostics or migrations.
   Future<Map<CounterKey, int>> snapshot() async {
     final raw = await _readAll();
-    return {
-      for (final k in CounterKey.values) k: raw[k.id] ?? 0,
-    };
+    return {for (final k in CounterKey.values) k: raw[k.id] ?? 0};
   }
 
   // ── plumbing ─────────────────────────────────────────────────────
 
   Future<Map<String, int>> _readAll() async {
-    
     final data = await storage.readData(_group);
     final raw = data[_key];
     if (raw is! Map) return {};
@@ -62,7 +60,13 @@ class CounterService {
     final out = <String, int>{};
     for (final e in raw.entries) {
       final v = e.value;
-      if (v is num) out[e.key as String] = v.toInt();
+      if (v is num) {
+        out[e.key as String] = v.toInt();
+      } else {
+        throw StorageFailure(
+          "Expected num counters but encounted Non-number ($v - type=${v.runtimeType})",
+        );
+      }
     }
     return out;
   }

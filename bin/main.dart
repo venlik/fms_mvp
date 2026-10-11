@@ -10,9 +10,9 @@ import 'package:finance_management_system/test%20files/dummy_objects.dart';
 
 void main() async {
   const env = {
-    'APP_DIR': 'z_store/.app',
-    'DOCS_DIR': 'z_store/.docs',
-    'DOWNLOAD_DIR': 'z_store/.downloads',
+    'APP_DIR': 'z_store.dbg/.app',
+    'DOCS_DIR': 'z_store.dbg/.docs',
+    'DOWNLOAD_DIR': 'z_store.dbg/.downloads',
   };
   final storage = CLIStorage.fromEnvironment(env);
   final store = LocalLogoStore();

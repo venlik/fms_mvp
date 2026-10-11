@@ -1,5 +1,5 @@
+import 'package:finance_management_system/backend/details/payment_details_comparison.dart';
 import 'package:finance_management_system/backend/enums/counter_key.dart';
-import 'package:finance_management_system/backend/enums/entity_type.dart';
 import 'package:finance_management_system/backend/enums/payment_method.dart';
 import 'package:finance_management_system/backend/enums/storage_group.dart';
 import 'package:finance_management_system/backend/exceptions.dart';
@@ -54,20 +54,20 @@ class PaymentRepository implements PaymentLookup {
     if (!draft.isValid) {
       throw InvalidState('Payment draft is incomplete');
     }
-    if (await _exists(draft.contentHash)) {
+    if (await _contentExists(draft)) {
       throw AlreadyExists(
-        "Payment of C_HASH: ${draft.contentHash} already exists",
+        "Payment with details (${draft.details}) already exists",
       );
     }
     // Cross-repo validation: the invoice must exist.
-    final invoice = await _invoices.findByNumber(draft.invoiceNumber.id);
+    final invoice = await _invoices.findByNumber(draft.invoiceNumber);
     if (invoice == null) {
       throw NotFound('Invoice ${draft.invoiceNumber.id} not found');
     }
 
     final n = await _counters.allocate(CounterKey.payment);
     final payment = Payment(
-      id: Identifier<Payment>(n, EntityType.payment),
+      id: Identifier<Payment>(n),
       amountInCents: draft.amountInCents,
       method: draft.method,
       invoiceNumber: draft.invoiceNumber,
@@ -83,10 +83,9 @@ class PaymentRepository implements PaymentLookup {
 
   Future<void> add(Payment payment) async {
     await _ensureLoaded();
-    if (_entries.containsKey(payment.id) ||
-        await _exists(payment.contentHash)) {
+    if (_entries.containsKey(payment.id) || await _contentExists(payment)) {
       throw AlreadyExists(
-        'Payment of C_HASH: ${payment.contentHash} already exists',
+        'Payment with details (${payment.details}) already exists',
       );
     }
     _entries[payment.id] = payment;
@@ -112,14 +111,12 @@ class PaymentRepository implements PaymentLookup {
     return _entries.values;
   }
 
-  Future<bool> _exists(int contentHash) async {
+  Future<bool> _contentExists(PaymentDetailsComparison candidate) async {
     await _ensureLoaded();
-    for (final payment in _entries.values) {
-      if (payment.contentHash == contentHash) {
-        return true;
-      }
-    }
-    return false;
+
+    return _entries.values
+        .where((p) => !p.isDeleted)
+        .any((p) => p.details == candidate.details);
   }
 
   // ── persistence ──────────────────────────────────────────────────
@@ -145,13 +142,14 @@ class PaymentRepository implements PaymentLookup {
   }
 
   Payment _deserialize(Map<String, dynamic> json) => Payment(
-    id: Identifier<Payment>(json['id'] as int, EntityType.payment),
+    id: Identifier<Payment>(json['id'] as int),
     amountInCents: json['amountInCents'] as int,
     method: PaymentMethod.values.byName(json['method'] as String),
     invoiceNumber: DocumentNumber(json['invoiceNumber'] as int),
     date: DateTime.parse(json['date'] as String),
     reference: json['reference'] as String,
     notes: json['notes'] as String?,
+    isDeleted: json['isDeleted'] as bool? ?? false,
   );
 
   Map<String, dynamic> _serialize(Payment p) => {
@@ -162,6 +160,7 @@ class PaymentRepository implements PaymentLookup {
     'date': p.date.toIso8601String(),
     'reference': p.reference,
     'notes': p.notes,
+    'isDeleted': p.isDeleted,
   };
 
   Future<void> _save() async {

@@ -1,3 +1,4 @@
+import 'package:finance_management_system/backend/models/identifier.dart' show IdentifierExtras;
 import 'package:finance_management_system/backend/models/item.dart';
 
 class InvoiceItem {

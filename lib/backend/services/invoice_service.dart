@@ -1,4 +1,5 @@
 import 'package:finance_management_system/backend/drafts/draft_invoice.dart';
+import 'package:finance_management_system/backend/exceptions.dart';
 import 'package:finance_management_system/backend/models/business.dart';
 import 'package:finance_management_system/backend/models/customer.dart';
 import 'package:finance_management_system/backend/models/document_number.dart';
@@ -35,10 +36,10 @@ class InvoiceService {
     notes: notes,
   );
 
-  Future<void> commit(DraftInvoice draft) async =>
+  Future<Invoice> commit(DraftInvoice draft) async =>
       await _invoiceRepository.commit(draft);
 
-  Future<Invoice?> findByNumber(int number) async =>
+  Future<Invoice?> findByNumber(DocumentNumber<Invoice> number) async =>
       await _invoiceRepository.findByNumber(number);
 
   Future<Iterable<Invoice>?> findAll() async =>
@@ -49,9 +50,9 @@ class InvoiceService {
     String? name,
     DocumentFonts? fonts,
   ]) async {
-    final invoice = await _invoiceRepository.findByNumber(ref.id);
+    final invoice = await _invoiceRepository.findByNumber(ref);
     if (invoice == null) {
-      throw Exception("Invoice(${ref.toString()}) not found");
+      throw NotFound('Invoice ${ref.toString()} not found');
     }
     final ipdf = InvoicePdf();
     //final pdf = await ipdf.generate(invoice, _store,fonts: fonts);

@@ -28,7 +28,8 @@ class ReceiptService {
   }) async {
     if (invoice.documentNumber.id != payment.invoiceNumber.id) {
       throw StateError(
-        "wrong payment: {payment.invoiceNumber=${payment.invoiceNumber}} --> Invoice.id=${invoice.documentNumber}",
+        'Payment references invoice ${payment.invoiceNumber}, '
+        'but was paired with invoice ${invoice.documentNumber}',
       );
     }
     final n = await _counterService.allocate(CounterKey.receipt);
@@ -42,10 +43,10 @@ class ReceiptService {
   /// Renders the receipt and saves the PDF under [name]. If [name] is
   /// null, defaults to `REC_<id>.pdf`.
   Future<void> saveAsPdf(
-    Receipt receipt, [
+    Receipt receipt, {
     String? name,
     DocumentFonts? fonts,
-  ]) async {
+  }) async {
     final resolvedName = name ?? 'REC_${receipt.receiptId.id}.pdf';
     final rpdf = ReceiptPdf(receipt);
     final pdf = await rpdf.generate(

@@ -1,9 +1,15 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
-class DraftCustomer {
+import 'package:finance_management_system/backend/details/customer_details_comparison.dart';
+
+class DraftCustomer with CustomerDetailsComparison {
+  @override
   String name;
   String address;
+  @override
   String phoneNumber;
   String? email;
+
+  static const _notSet = Object();
 
   DraftCustomer({
     this.name = '',
@@ -17,23 +23,17 @@ class DraftCustomer {
       address.trim().isNotEmpty &&
       phoneNumber.trim().isNotEmpty;
 
-  int get contentHash =>
-      name.hashCode ^
-      address.hashCode ^
-      phoneNumber.hashCode ^
-      email.hashCode << 10;
-
   DraftCustomer copyWith({
     String? name,
     String? address,
     String? phoneNumber,
-    String? email,
+    Object? email = _notSet,
   }) {
     return DraftCustomer(
       name: name ?? this.name,
       address: address ?? this.address,
       phoneNumber: phoneNumber ?? this.phoneNumber,
-      email: email ?? this.email,
+      email: identical(email, _notSet) ? this.email : email as String?,
     );
   }
 }

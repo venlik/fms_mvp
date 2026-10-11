@@ -1,14 +1,17 @@
+import 'package:finance_management_system/backend/details/item_details_comparison.dart';
 import 'package:finance_management_system/backend/models/identifier.dart';
 
 /// A catalog entry — a product or service that can appear on many
 /// invoices with different quantities. Identity is [id]; equality and
 /// hashing are based on it.
-class Item implements Entity {
+class Item with ItemDetailsComparison implements Entity {
   final Identifier<Item> id;
+  @override
   final String name;
+  @override
   final String description;
   final int priceInCents;
-  final bool? isDeleted;
+  final bool isDeleted;
 
   const Item({
     required this.id,
@@ -33,8 +36,6 @@ class Item implements Entity {
       isDeleted: isDeleted ?? this.isDeleted,
     );
   }
-
-  int get contentHash => name.hashCode ^ description.hashCode << 10; 
 
   @override
   bool operator ==(Object other) =>

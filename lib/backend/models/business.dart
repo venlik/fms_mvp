@@ -1,3 +1,4 @@
+import 'package:finance_management_system/backend/details/business_details_comparison.dart';
 import 'package:finance_management_system/backend/models/identifier.dart';
 import 'package:finance_management_system/backend/models/logo.dart';
 
@@ -11,15 +12,21 @@ import 'package:finance_management_system/backend/models/logo.dart';
 //   required final String configuredCurrency,
 // }) implements Entity{}
 
-class Business implements Entity {
+class Business with BusinessDetailsComparison implements Entity {
   final Identifier<Business> id;
+  @override
   final String name;
+  @override
   final Logo? logo;
+  @override
   final String phoneNumber;
+  @override
   final String email;
+  @override
   final String serviceLocation;
+  @override
   final String configuredCurrency;
-  final bool? isDeleted;
+  final bool isDeleted;
 
   const Business({
     required this.id,
@@ -51,7 +58,7 @@ class Business implements Entity {
     isDeleted: isDeleted ?? this.isDeleted,
   );
 
-  Business withoutLogo() => Business(
+  Business get withoutLogo => Business(
     id: id,
     name: name,
     logo: null,
@@ -61,14 +68,6 @@ class Business implements Entity {
     configuredCurrency: configuredCurrency,
     isDeleted: isDeleted,
   );
-
-  ///hashes content{[name] + [phoneNumber] + [email]+ [serviceLocation]}
-  ///useful for content equality
-  int get contentHash =>
-      name.hashCode ^
-      phoneNumber.hashCode ^
-      email.hashCode ^
-      serviceLocation.hashCode << 10;
 
   @override
   bool operator ==(Object other) =>

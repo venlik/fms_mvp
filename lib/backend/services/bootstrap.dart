@@ -11,12 +11,12 @@ final class Services({
   required final InvoiceService invoiceService,
   required final ItemService itemService,
   required final ReceiptService receiptService,
-  required final Repositories repos
+  required final Repositories repos,
 }) {}
 
 Future<Services> bootStrapServices(Storage storage, LogoStore store) async {
   final repos = await bootstrapRepositories(storage);
-  final cs = CounterService(storage);
+  final cs = repos.counters;
   final ivs = InvoiceService.of(repos.invoices, storage, store);
   final its = ItemService.of(repos.items);
   final rs = ReceiptService.of(cs, storage, store);
@@ -25,6 +25,6 @@ Future<Services> bootStrapServices(Storage storage, LogoStore store) async {
     invoiceService: ivs,
     itemService: its,
     receiptService: rs,
-    repos: repos
+    repos: repos,
   );
 }

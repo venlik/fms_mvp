@@ -1,5 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:finance_management_system/backend/details/invoice_details_comparison.dart';
 import 'package:finance_management_system/backend/enums/payment_terms.dart';
+import 'package:finance_management_system/backend/exceptions.dart';
 import 'package:finance_management_system/backend/models/business.dart';
 import 'package:finance_management_system/backend/models/customer.dart';
 import 'package:finance_management_system/backend/models/document_number.dart';
@@ -8,13 +10,20 @@ import 'package:finance_management_system/backend/models/invoice_item.dart';
 
 /// Editable content for a not-yet-issued invoice.
 /// No documentNumber, no derived totals stored.
-class DraftInvoice {
+class DraftInvoice with InvoiceDetailsComparison {
+  @override
   Business? business;
+  @override
   Customer? customer;
+  @override
   DateTime date;
+  @override
   PaymentTerms terms;
+  @override
   List<InvoiceItem> items;
   String? notes;
+
+  static const _notSet = Object();
 
   DraftInvoice({
     this.business,
@@ -43,20 +52,23 @@ class DraftInvoice {
   void addItem(InvoiceItem item) {
     if (!items.contains(item)) {
       items.add(item);
+    } else {
+      throw AlreadyExists("Item already Exists");
     }
   }
 
   void removeItem(InvoiceItem item) {
     if (items.contains(item)) {
       items.remove(item);
+    } else {
+      throw NotFound("Item not found");
     }
   }
 
   void replaceItem(InvoiceItem oldItem, InvoiceItem newItem) {
     if (items.contains(oldItem) && !items.contains(newItem)) {
-      //TODO: make this api return success/error status
       final index = items.indexOf(oldItem);
-      if (index < 0) return;
+      if (index < 0) throw NotFound('Item not found');
       items[index] = newItem;
     }
   }
@@ -77,35 +89,30 @@ class DraftInvoice {
       business: business!,
       customer: customer!,
       items: Set.of(items),
-      paymentTerms: terms,
+      terms: terms,
       notes: notes,
     );
   }
 
   DraftInvoice copyWith({
-    Business? business,
-    Customer? customer,
+    Object? business = _notSet,
+    Object? customer = _notSet,
     DateTime? date,
     PaymentTerms? terms,
     Set<InvoiceItem>? items,
-    String? notes,
+    Object? notes = _notSet,
   }) {
     return DraftInvoice(
-      business: business ?? this.business,
-      customer: customer ?? this.customer,
+      business: identical(business, _notSet)
+          ? this.business
+          : business as Business?,
+      customer: identical(customer, _notSet)
+          ? this.customer
+          : customer as Customer?,
       date: date ?? this.date,
       terms: terms ?? this.terms,
       items: items ?? this.items.toSet(),
-      notes: notes ?? this.notes,
+      notes: identical(notes, _notSet) ? this.notes : notes as String?,
     );
   }
-
-  int get _itemsHash => items.fold(0, (h, item) => h ^ item.hashCode);
-
-  int? get contentHash => canIssue
-      ? business!.contentHash ^
-            customer!.contentHash ^
-            _itemsHash ^
-            terms.hashCode << 10
-      : null;
 }

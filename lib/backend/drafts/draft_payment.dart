@@ -1,4 +1,5 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:finance_management_system/backend/details/payment_details_comparison.dart';
 import 'package:finance_management_system/backend/enums/payment_method.dart';
 import 'package:finance_management_system/backend/models/document_number.dart';
 import 'package:finance_management_system/backend/models/invoice.dart';
@@ -6,14 +7,20 @@ import 'package:finance_management_system/backend/models/invoice.dart';
 /// Editable content for a not-yet-recorded payment.
 /// The invoice it settles is fixed at construction — the user can't
 /// redirect a payment to a different invoice mid-form.
-class DraftPayment {
+class DraftPayment with PaymentDetailsComparison {
+  @override
   final DocumentNumber<Invoice> invoiceNumber;
 
+  @override
   PaymentMethod method;
+  @override
   int amountInCents;
+  @override
   String reference;
-  
+
   String? notes;
+
+  static const _notSet = Object();
 
   DraftPayment({
     required this.invoiceNumber,
@@ -32,7 +39,7 @@ class DraftPayment {
     int? amountInCents,
     DateTime? date,
     String? reference,
-    String? notes,
+    Object? notes = _notSet,
   }) {
     return DraftPayment(
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
@@ -40,13 +47,7 @@ class DraftPayment {
       amountInCents: amountInCents ?? this.amountInCents,
       reference: reference ?? this.reference,
 
-      notes: notes ?? this.notes,
+      notes: identical(notes, _notSet) ? this.notes : notes as String?,
     );
   }
-
-  int get contentHash =>
-      amountInCents.hashCode ^
-      method.hashCode ^
-      invoiceNumber.hashCode ^
-      reference.hashCode << 10;
 }

@@ -15,7 +15,7 @@ class InvoicePdf extends DocumentPdf {
     final currency = invoice.business.configuredCurrency;
     return [
       MetaRow('Date:', DocFormat.date(invoice.date)),
-      MetaRow('Payment Terms:', invoice.paymentTerms.label),
+      MetaRow('Payment Terms:', invoice.terms.label),
       MetaRow('Due Date:', DocFormat.date(invoice.dueDate)),
       MetaRow(
         'Balance Due:',
@@ -30,7 +30,7 @@ class InvoicePdf extends DocumentPdf {
     final body = (invoice.notes?.isNotEmpty ?? false)
         ? invoice.notes!
         : 'Payment is due by the date shown above. '
-            'Please reference the invoice number on all payments.';
+              'Please reference the invoice number on all payments.';
 
     return _sideLabelRow('Terms:', body);
   }
@@ -45,10 +45,7 @@ pw.Widget _sideLabelRow(String label, String body) {
         width: 50,
         child: pw.Text(
           label,
-          style: pw.TextStyle(
-            fontSize: 9.5,
-            fontWeight: pw.FontWeight.bold,
-          ),
+          style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold),
         ),
       ),
       pw.Expanded(

@@ -1,13 +1,21 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:finance_management_system/backend/details/business_details_comparison.dart';
 import 'package:finance_management_system/backend/models/logo.dart';
 
-class DraftBusiness {
+class DraftBusiness with BusinessDetailsComparison {
+  @override
   String name;
+  @override
   Logo? logo;
+  @override
   String phoneNumber;
+  @override
   String email;
+  @override
   String serviceLocation;
+  @override
   String configuredCurrency;
+  static const _notSet = Object();
 
   DraftBusiness({
     this.name = '',
@@ -27,47 +35,17 @@ class DraftBusiness {
 
   DraftBusiness copyWith({
     String? name,
-    Logo? logo,
+    Object? logo = _notSet,
     String? phoneNumber,
     String? email,
     String? serviceLocation,
     String? configuredCurrency,
   }) => DraftBusiness(
     name: name ?? this.name,
-    logo: logo ?? this.logo,
+    logo: identical(logo, _notSet) ? this.logo : logo as Logo?,
     phoneNumber: phoneNumber ?? this.phoneNumber,
     email: email ?? this.email,
     serviceLocation: serviceLocation ?? this.serviceLocation,
     configuredCurrency: configuredCurrency ?? this.configuredCurrency,
   );
-
-  ///hashes content{[name] + [phoneNumber] + [email]+ [serviceLocation]}
-  ///useful for content equality
-  int get contentHash =>
-      name.hashCode ^
-      phoneNumber.hashCode ^
-      email.hashCode ^
-      serviceLocation.hashCode << 10;
-
-  @override
-  bool operator ==(covariant DraftBusiness other) {
-    if (identical(this, other)) return true;
-
-    return other.name == name &&
-        other.logo == logo &&
-        other.phoneNumber == phoneNumber &&
-        other.email == email &&
-        other.serviceLocation == serviceLocation &&
-        other.configuredCurrency == configuredCurrency;
-  }
-
-  @override
-  int get hashCode {
-    return name.hashCode ^
-        logo.hashCode ^
-        phoneNumber.hashCode ^
-        email.hashCode ^
-        serviceLocation.hashCode ^
-        configuredCurrency.hashCode;
-  }
 }

@@ -1,6 +1,6 @@
+import 'package:finance_management_system/backend/details/invoice_details_comparison.dart';
 import 'package:finance_management_system/backend/drafts/draft_invoice.dart';
 import 'package:finance_management_system/backend/enums/counter_key.dart';
-import 'package:finance_management_system/backend/enums/entity_type.dart';
 import 'package:finance_management_system/backend/enums/payment_terms.dart';
 import 'package:finance_management_system/backend/enums/storage_group.dart';
 import 'package:finance_management_system/backend/exceptions.dart';
@@ -25,7 +25,7 @@ class InvoiceRepository implements InvoiceLookup {
   final CustomerLookup _customers;
   final ItemLookup _items;
 
-  final Map<int, Invoice> _entries = {};
+  final Map<DocumentNumber<Invoice>, Invoice> _entries = {};
   bool _loaded = false;
 
   static const _group = StorageGroup.invoices;
@@ -84,9 +84,9 @@ class InvoiceRepository implements InvoiceLookup {
     if (!draft.canIssue) {
       throw InvalidState('Draft is not complete');
     }
-    if (await _exists(draft.contentHash!)) {
+    if (await _contentExists(draft)) {
       throw AlreadyExists(
-        "Invoice of C_HASH: ${draft.contentHash} already exists",
+        "Invoice with details (${draft.details}) already exists",
       );
     }
     final number = await nextNumber();
@@ -99,17 +99,17 @@ class InvoiceRepository implements InvoiceLookup {
 
   Future<void> save(Invoice invoice) async {
     await _ensureLoaded();
-    if (_entries.containsKey(invoice.documentNumber.id) ||
-        await _exists(invoice.contentHash)) {
+    if (_entries.containsKey(invoice.documentNumber) ||
+        await _contentExists(invoice)) {
       throw AlreadyExists(
-        "Invoice of C_HASH: ${invoice.contentHash} already exists",
+        "Invoice with details (${invoice.details}) already exists",
       );
     }
-    _entries[invoice.documentNumber.id] = invoice;
+    _entries[invoice.documentNumber] = invoice;
     await _persist();
   }
 
-  Future<void> delete(int number) async {
+  Future<void> delete(DocumentNumber<Invoice> number) async {
     await _ensureLoaded();
     if (_entries.remove(number) == null) {
       throw NotFound('Invoice $number not found');
@@ -120,7 +120,7 @@ class InvoiceRepository implements InvoiceLookup {
   // ── lookup ──────────────────────────────────────────────────────
 
   @override
-  Future<Invoice?> findByNumber(int number) async {
+  Future<Invoice?> findByNumber(DocumentNumber<Invoice> number) async {
     await _ensureLoaded();
     return _entries[number];
   }
@@ -130,14 +130,11 @@ class InvoiceRepository implements InvoiceLookup {
     return _entries.values;
   }
 
-  Future<bool> _exists(int contentHash) async {
+  Future<bool> _contentExists(InvoiceDetailsComparison candidate) async {
     await _ensureLoaded();
-    for (final invoice in _entries.values) {
-      if (invoice.contentHash == contentHash) {
-        return true;
-      }
-    }
-    return false;
+    return _entries.values
+        .where((i) => !i.isDeleted)
+        .any((i) => i.details == candidate.details);
   }
 
   // ── internals ───────────────────────────────────────────────────
@@ -154,7 +151,7 @@ class InvoiceRepository implements InvoiceLookup {
     if (list is List) {
       for (final json in list.cast<Map<String, dynamic>>()) {
         final inv = await _deserialize(json);
-        _entries[inv.documentNumber.id] = inv;
+        _entries[inv.documentNumber] = inv;
       }
     }
   }
@@ -162,7 +159,7 @@ class InvoiceRepository implements InvoiceLookup {
   Future<Invoice> _deserialize(Map<String, dynamic> json) async {
     final businessId = json['businessId'] as int;
     final business = await _businesses.findById(
-      Identifier<Business>(businessId, EntityType.business),
+      Identifier<Business>(businessId),
     );
     if (business == null) {
       throw NotFound('Business $businessId referenced by invoice not found');
@@ -170,7 +167,7 @@ class InvoiceRepository implements InvoiceLookup {
 
     final customerId = json['customerId'] as int;
     final customer = await _customers.findById(
-      Identifier<Customer>(customerId, EntityType.customer),
+      Identifier<Customer>(customerId),
     );
     if (customer == null) {
       throw NotFound('Customer $customerId referenced by invoice not found');
@@ -182,7 +179,7 @@ class InvoiceRepository implements InvoiceLookup {
       final itemId = entry['itemId'] as int;
       final quantity = entry['quantity'] as int;
       final item = await _items.findById(
-        Identifier<Item>(itemId, EntityType.item),
+        Identifier<Item>(itemId),
       );
       if (item == null) {
         throw NotFound('Item $itemId referenced by invoice not found');
@@ -201,12 +198,24 @@ class InvoiceRepository implements InvoiceLookup {
       business: business,
       customer: customer,
       items: items,
-      paymentTerms: terms,
+      terms: terms,
       notes: json['notes'] as String?,
+      isDeleted: json['isDeleted'] as bool? ?? false,
     );
   }
 
-  Map<String, dynamic> _serialize(Invoice i) => i.toMap();
+  Map<String, dynamic> _serialize(Invoice i) => {
+    'documentNumber': i.documentNumber.id,
+    'date': i.date.toIso8601String(),
+    'businessId': i.business.id.number,
+    'customerId': i.customer.id.number,
+    'items': i.items
+        .map((it) => {'itemId': it.item.id.number, 'quantity': it.quantity})
+        .toList(),
+    'paymentTerms': i.terms.label,
+    'notes': i.notes,
+    'isDeleted': i.isDeleted,
+  };
 
   Future<void> _persist() async {
     await _storage.writeData(_group, {

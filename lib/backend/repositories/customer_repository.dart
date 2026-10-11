@@ -1,6 +1,6 @@
 // repositories/customer_repository.dart
+import 'package:finance_management_system/backend/details/customer_details_comparison.dart';
 import 'package:finance_management_system/backend/enums/counter_key.dart';
-import 'package:finance_management_system/backend/enums/entity_type.dart';
 import 'package:finance_management_system/backend/enums/storage_group.dart';
 import 'package:finance_management_system/backend/exceptions.dart';
 import 'package:finance_management_system/backend/models/customer.dart';
@@ -46,14 +46,14 @@ class CustomerRepository implements CustomerLookup {
     if (!draft.isValid) {
       throw InvalidState('Customer draft is incomplete');
     }
-    if (await _exists(draft.contentHash)) {
+    if (await _contentExists(draft)) {
       throw AlreadyExists(
-        'Customer of C_HASH ${draft.contentHash} already exists',
+        'A customer with the same name and phone already exists',
       );
     }
     final n = await _counters.allocate(CounterKey.customer);
     final customer = Customer(
-      id: Identifier<Customer>(n, EntityType.customer),
+      id: Identifier<Customer>(n),
       name: draft.name,
       address: draft.address,
       phoneNumber: draft.phoneNumber,
@@ -67,10 +67,9 @@ class CustomerRepository implements CustomerLookup {
 
   Future<void> add(Customer customer) async {
     await _ensureLoaded();
-    if (_entries.containsKey(customer.id) |
-        await _exists(customer.contentHash)) {
+    if (_entries.containsKey(customer.id) || await _contentExists(customer)) {
       throw AlreadyExists(
-        'Customer of C_HASH ${customer.contentHash} already exists',
+        'A customer with the same name and phone already exists',
       );
     }
     _entries[customer.id] = customer;
@@ -134,14 +133,13 @@ class CustomerRepository implements CustomerLookup {
     );
   }
 
-  Future<bool> _exists(int contentHash) async {
+  /// Checks whether any non-deleted entry has the same content
+  /// significance as [candidate].
+  Future<bool> _contentExists(CustomerDetailsComparison candidate) async {
     await _ensureLoaded();
-    for (final customer in _entries.values) {
-      if (customer.contentHash == contentHash) {
-        return true;
-      }
-    }
-    return false;
+    return _entries.values
+        .where((c) => !c.isDeleted)
+        .any((c) => c.details == candidate.details);
   }
 
   // ── persistence ──────────────────────────────────────────────────
@@ -167,7 +165,7 @@ class CustomerRepository implements CustomerLookup {
   }
 
   Customer _deserialize(Map<String, dynamic> json) => Customer(
-    id: Identifier<Customer>(json['id'] as int, EntityType.customer),
+    id: Identifier<Customer>(json['id'] as int),
     name: json['name'] as String,
     address: json['address'] as String,
     phoneNumber: json['phoneNumber'] as String,
