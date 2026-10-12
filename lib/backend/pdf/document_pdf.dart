@@ -184,7 +184,7 @@ abstract class DocumentPdf {
             ),
             pw.SizedBox(height: 4),
             pw.Text(
-              documentNumber,
+              "# $documentNumber",
               style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
             ),
           ],
