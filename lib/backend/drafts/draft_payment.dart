@@ -26,7 +26,6 @@ class DraftPayment with PaymentDetailsComparison {
     required this.invoiceNumber,
     this.method = PaymentMethod.cash,
     this.amountInCents = 0,
-
     required this.reference,
     this.notes,
   });
@@ -37,7 +36,6 @@ class DraftPayment with PaymentDetailsComparison {
     DocumentNumber<Invoice>? invoiceNumber,
     PaymentMethod? method,
     int? amountInCents,
-    DateTime? date,
     String? reference,
     Object? notes = _notSet,
   }) {
@@ -46,7 +44,6 @@ class DraftPayment with PaymentDetailsComparison {
       method: method ?? this.method,
       amountInCents: amountInCents ?? this.amountInCents,
       reference: reference ?? this.reference,
-
       notes: identical(notes, _notSet) ? this.notes : notes as String?,
     );
   }
