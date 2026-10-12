@@ -22,7 +22,7 @@ import 'package:finance_management_system/backend/models/invoice_item.dart';
 class InvoiceDetails with Equatable {
   final Identifier<Business> businessId;
   final Identifier<Customer> customerId;
-  final List<InvoiceItem> items;   // sorted
+  final List<InvoiceItem> items; // sorted
   final PaymentTerms terms;
   final DateTime date;
 
@@ -35,13 +35,12 @@ class InvoiceDetails with Equatable {
   }) : items = _sorted(items);
 
   static List<InvoiceItem> _sorted(Set<InvoiceItem> items) {
-    final list = items.toList()
-      ..sort((a, b) => a.itemId.compareTo(b.itemId));
+    final list = items.toList()..sort((a, b) => a.itemId.compareTo(b.itemId));
     return List.unmodifiable(list);
   }
 
   @override
-  List<Object?> get props => [businessId, customerId, items, terms, date];
+  List<Object?> get props => [businessId, customerId, ...items, terms, date];
 
   @override
   String toString() =>

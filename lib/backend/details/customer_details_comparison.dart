@@ -12,5 +12,5 @@ mixin CustomerDetailsComparison {
 
   /// The content-significance view of this customer.
   CustomerDetails get details =>
-      CustomerDetails(name: name, phoneNumber: phoneNumber);
+      CustomerDetails(name: name.toLowerCase(), phoneNumber: phoneNumber);
 }
