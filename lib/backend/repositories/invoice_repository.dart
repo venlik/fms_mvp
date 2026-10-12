@@ -72,7 +72,7 @@ class InvoiceRepository implements InvoiceLookup {
     required PaymentTerms paymentTerms,
     String? notes,
   }) => DraftInvoice(
-    date: DateTime.now(),
+    date: DateTime.timestamp(),
     business: business,
     customer: customer,
     items: items,
@@ -91,13 +91,13 @@ class InvoiceRepository implements InvoiceLookup {
     }
     final number = await nextNumber();
     final invoice = draft.toInvoice(number);
-    await save(invoice);
+    await add(invoice);
     return invoice;
   }
 
   // ── persistence ─────────────────────────────────────────────────
 
-  Future<void> save(Invoice invoice) async {
+  Future<void> add(Invoice invoice) async {
     await _ensureLoaded();
     if (_entries.containsKey(invoice.documentNumber) ||
         await _contentExists(invoice)) {
@@ -105,29 +105,46 @@ class InvoiceRepository implements InvoiceLookup {
         "Invoice with details (${invoice.details}) already exists",
       );
     }
-    _entries[invoice.documentNumber] = invoice;
-    await _persist();
+    final tmp = _snapshot;
+    tmp[invoice.documentNumber] = invoice;
+    await _persistAndLoad(tmp);
   }
 
   Future<void> delete(DocumentNumber<Invoice> number) async {
     await _ensureLoaded();
-    if (_entries.remove(number) == null) {
+    final tmp = _snapshot;
+    if (tmp.remove(number) == null) {
       throw NotFound('Invoice $number not found');
     }
-    await _persist();
+    await _persistAndLoad(tmp);
   }
 
   // ── lookup ──────────────────────────────────────────────────────
 
   @override
-  Future<Invoice?> findByNumber(DocumentNumber<Invoice> number) async {
+  Future<Invoice?> findByNumber(
+    DocumentNumber<Invoice> number, {
+    bool includeDeleted = false,
+  }) async {
     await _ensureLoaded();
-    return _entries[number];
+
+    final invoice = _entries[number];
+
+    if (invoice == null) return null;
+
+    if (!includeDeleted && invoice.isDeleted) {
+      throw InvalidState("Cannot find invoice: invoice is deleted.");
+    }
+
+    return invoice;
   }
 
-  Future<Iterable<Invoice>> findAll() async {
+  Future<Iterable<Invoice>> findAll({bool includeDeleted = false}) async {
     await _ensureLoaded();
-    return _entries.values;
+
+    return List.unmodifiable(
+      _entries.values.where((invoice) => includeDeleted || !invoice.isDeleted),
+    );
   }
 
   Future<bool> _contentExists(InvoiceDetailsComparison candidate) async {
@@ -136,6 +153,8 @@ class InvoiceRepository implements InvoiceLookup {
         .where((i) => !i.isDeleted)
         .any((i) => i.details == candidate.details);
   }
+
+  Map<DocumentNumber<Invoice>, Invoice> get _snapshot => Map.of(_entries);
 
   // ── internals ───────────────────────────────────────────────────
 
@@ -160,7 +179,9 @@ class InvoiceRepository implements InvoiceLookup {
     final businessId = json['businessId'] as int;
     final business = await _businesses.findById(
       Identifier<Business>(businessId),
+      includeDeleted: true,
     );
+
     if (business == null) {
       throw NotFound('Business $businessId referenced by invoice not found');
     }
@@ -168,6 +189,7 @@ class InvoiceRepository implements InvoiceLookup {
     final customerId = json['customerId'] as int;
     final customer = await _customers.findById(
       Identifier<Customer>(customerId),
+      includeDeleted: true,
     );
     if (customer == null) {
       throw NotFound('Customer $customerId referenced by invoice not found');
@@ -180,6 +202,7 @@ class InvoiceRepository implements InvoiceLookup {
       final quantity = entry['quantity'] as int;
       final item = await _items.findById(
         Identifier<Item>(itemId),
+        includeDeleted: true,
       );
       if (item == null) {
         throw NotFound('Item $itemId referenced by invoice not found');
@@ -217,9 +240,17 @@ class InvoiceRepository implements InvoiceLookup {
     'isDeleted': i.isDeleted,
   };
 
-  Future<void> _persist() async {
+  Future<void> _save([Map<DocumentNumber<Invoice>, Invoice>? entries]) async {
+    final ent = entries ?? _entries;
     await _storage.writeData(_group, {
-      'invoices': _entries.values.map(_serialize).toList(),
+      'invoices': ent.values.map(_serialize).toList(),
     });
+  }
+
+  Future<void> _persistAndLoad(
+    Map<DocumentNumber<Invoice>, Invoice> tmp,
+  ) async {
+    await _save(tmp);
+    await _load();
   }
 }

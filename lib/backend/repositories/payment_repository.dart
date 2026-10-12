@@ -88,27 +88,46 @@ class PaymentRepository implements PaymentLookup {
         'Payment with details (${payment.details}) already exists',
       );
     }
-    _entries[payment.id] = payment;
-    await _save();
+    final tmp = _snapshot;
+    tmp[payment.id] = payment;
+    await _persistAndLoad(tmp);
   }
 
   // ── lookup ───────────────────────────────────────────────────────
 
   @override
-  Future<Payment?> findById(Identifier<Payment> id) async {
+  Future<Payment?> findById(
+    Identifier<Payment> id, {
+    bool includeDeleted = false,
+  }) async {
     await _ensureLoaded();
-    return _entries[id];
+
+    final payment = _entries[id];
+
+    if (payment == null) return null;
+
+    if (!includeDeleted && payment.isDeleted) {
+      throw InvalidState("payment is deleted");
+    }
+
+    return payment;
   }
 
   @override
-  Future<Iterable<Payment>> findByInvoice(int invoiceNumber) async {
+  Future<Iterable<Payment>> findByInvoice(
+    DocumentNumber<Invoice> invoiceNumber, {
+    bool includeDeleted = false,
+  }) async {
     await _ensureLoaded();
-    return _entries.values.where((p) => p.invoiceNumber.id == invoiceNumber);
+    return _entries.values.where(
+      (p) =>
+          (includeDeleted || !p.isDeleted) && p.invoiceNumber == invoiceNumber,
+    );
   }
 
-  Future<Iterable<Payment>> findAll() async {
+  Future<Iterable<Payment>> findAll({bool includeDeleted = false}) async {
     await _ensureLoaded();
-    return _entries.values;
+    return _entries.values.where((p) => includeDeleted || !p.isDeleted);
   }
 
   Future<bool> _contentExists(PaymentDetailsComparison candidate) async {
@@ -119,6 +138,7 @@ class PaymentRepository implements PaymentLookup {
         .any((p) => p.details == candidate.details);
   }
 
+  Map<Identifier<Payment>, Payment> get _snapshot => Map.of(_entries);
   // ── persistence ──────────────────────────────────────────────────
 
   Future<void> _ensureLoaded() async {
@@ -163,9 +183,15 @@ class PaymentRepository implements PaymentLookup {
     'isDeleted': p.isDeleted,
   };
 
-  Future<void> _save() async {
+  Future<void> _save([Map<Identifier<Payment>, Payment>? entries]) async {
     final raw = await _storage.readData(_group);
-    raw['payments'] = _entries.values.map(_serialize).toList();
+    final ent = entries ?? _entries;
+    raw['payments'] = ent.values.map(_serialize).toList();
     await _storage.writeData(_group, raw);
+  }
+
+  Future<void> _persistAndLoad(Map<Identifier<Payment>, Payment> tmp) async {
+    await _save(tmp);
+    await _load();
   }
 }

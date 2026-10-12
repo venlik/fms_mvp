@@ -82,44 +82,65 @@ class BusinessRepository implements BusinessLookup {
         'Business with details (${business.details}) already exists',
       );
     }
-    _entries[business.id] = business;
-    await _save();
+    final tmp = _snapshot;
+    tmp[business.id] = business;
+    await _persistAndLoad(tmp);
   }
 
   // ── lookup ───────────────────────────────────────────────────────
 
   @override
-  Future<Business?> findById(Identifier<Business> id) async {
+  Future<Business?> findById(
+    Identifier<Business> id, {
+    bool includeDeleted = false,
+  }) async {
     await _ensureLoaded();
-    return _entries[id];
+
+    final business = _entries[id];
+
+    if (business == null) return null;
+
+    if (!includeDeleted && business.isDeleted) {
+      throw InvalidState("Cannot find business: business is deleted.");
+    }
+
+    return business;
   }
 
   @override
   Future<Map<Identifier<Business>, Business>> findByIds(
-    Iterable<Identifier<Business>> ids,
-  ) async {
+    Iterable<Identifier<Business>> ids, {
+    bool includeDeleted = false,
+  }) async {
     await _ensureLoaded();
+
     return {
       for (final id in ids)
-        if (_entries[id] case final b?) id: b,
+        if (_entries[id] case final b?)
+          if (includeDeleted || !b.isDeleted) id: b,
     };
   }
 
-  Future<Business?> findSingleton() async {
+  Future<Business?> findSingleton({bool includeDeleted = false}) async {
     await _ensureLoaded();
-    return _entries.values.firstOrNull;
+
+    return _entries.values.firstWhere(
+      (business) => includeDeleted || !business.isDeleted,
+      orElse: () => throw NotFound("No business found"),
+    );
   }
 
   // ── mutations ──────────────────────────────────────────────────
   Future<void> remove(Business business) async {
     await _ensureLoaded();
     final id = business.id;
-    _entries.update(
+    final tmp = _snapshot;
+    tmp.update(
       id,
       (business) => business.copyWith(isDeleted: true),
       ifAbsent: () => throw NotFound("Business[${business.id}] not found"),
     );
-    await _save();
+    await _persistAndLoad(tmp);
   }
 
   ///Replaces an old business with a new business,
@@ -133,13 +154,16 @@ class BusinessRepository implements BusinessLookup {
         "Id mismatch ==> (newBusiness.id=$nbId) != (oldBusiness.id= $id)",
       );
     }
-    _entries.update(
+    final tmp = _snapshot;
+    tmp.update(
       id,
       (business) => newBusiness,
       ifAbsent: () => throw NotFound("Business[$id] not found"),
     );
-    await _save();
+    await _persistAndLoad(tmp);
   }
+
+  Map<Identifier<Business>, Business> get _snapshot => Map.of(_entries);
 
   // ── persistence ──────────────────────────────────────────────────
 
@@ -202,9 +226,15 @@ class BusinessRepository implements BusinessLookup {
     'isDeleted': b.isDeleted,
   };
 
-  Future<void> _save() async {
+  Future<void> _save([Map<Identifier<Business>, Business>? entries]) async {
+    final ent = entries ?? _entries;
     final raw = await _storage.readData(_group);
-    raw['businesses'] = _entries.values.map(_serialize).toList();
+    raw['businesses'] = ent.values.map(_serialize).toList();
     await _storage.writeData(_group, raw);
+  }
+
+  Future<void> _persistAndLoad(Map<Identifier<Business>, Business> tmp) async {
+    await _save(tmp);
+    await _load();
   }
 }

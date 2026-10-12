@@ -88,12 +88,11 @@ class ItemRepository implements ItemLookup {
   Future<void> add(Item item) async {
     await _ensureLoaded();
     if (_entries.containsKey(item.id) || await _contentExists(item)) {
-      throw AlreadyExists(
-        'Item with details (${item.details}) already exists',
-      );
+      throw AlreadyExists('Item with details (${item.details}) already exists');
     }
-    _entries[item.id] = item;
-    await _save();
+    final tmp = _snapshot;
+    tmp[item.id] = item;
+    await _persistAndLoad(tmp);
   }
 
   Future<void> remove(Item item) async {
@@ -101,27 +100,50 @@ class ItemRepository implements ItemLookup {
     if (!_entries.containsKey(item.id)) {
       throw NotFound('Item ${item.id} not found');
     }
-    _entries[item.id] = item.copyWith(isDeleted: true);
-    await _save();
+    final tmp = _snapshot;
+    tmp[item.id] = item.copyWith(isDeleted: true);
+    await _persistAndLoad(tmp);
   }
 
   // ── lookup ──────────────────────────────────────────────────────
 
   @override
-  Future<Item?> findById(Identifier<Item> id) async {
+  Future<Item?> findById(
+    Identifier<Item> id, {
+    bool includeDeleted = false,
+  }) async {
     await _ensureLoaded();
-    return _entries[id];
+
+    final item = _entries[id];
+
+    if (item == null) return null;
+
+    if (!includeDeleted && item.isDeleted) {
+      throw InvalidState("Cannot find item: item is deleted.");
+    }
+
+    return item;
   }
 
-  Future<Iterable<Item>> findByName(String name) async {
+  Future<Iterable<Item>> findByName(
+    String name, {
+    bool includeDeleted = false,
+  }) async {
     await _ensureLoaded();
+
     final q = name.toLowerCase();
-    return _entries.values.where((it) => it.name.toLowerCase() == q);
+
+    return _entries.values.where(
+      (it) => (includeDeleted || !it.isDeleted) && it.name.toLowerCase() == q,
+    );
   }
 
-  Future<Iterable<Item>> findAll() async {
+  Future<Iterable<Item>> findAll({bool includeDeleted = false}) async {
     await _ensureLoaded();
-    return List.unmodifiable(_entries.values);
+
+    return List.unmodifiable(
+      _entries.values.where((it) => includeDeleted || !it.isDeleted),
+    );
   }
 
   Future<bool> _contentExists(ItemDetailsComparison candidate) async {
@@ -131,11 +153,16 @@ class ItemRepository implements ItemLookup {
         .any((it) => it.details == candidate.details);
   }
 
+  Map<Identifier<Item>, Item> get _snapshot => Map.of(_entries);
   // ── internals ───────────────────────────────────────────────────
 
   Future<void> _ensureLoaded() async {
     if (_loaded) return;
+    await _load();
+    _loaded = true;
+  }
 
+  Future<void> _load() async {
     final raw = await _storage.readData(_group);
     final list = raw['items'];
     if (list is List) {
@@ -148,7 +175,6 @@ class ItemRepository implements ItemLookup {
           }),
         );
     }
-    _loaded = true;
   }
 
   Item _deserialize(Map<String, dynamic> json) => Item(
@@ -167,9 +193,15 @@ class ItemRepository implements ItemLookup {
     'isDeleted': it.isDeleted,
   };
 
-  Future<void> _save() async {
+  Future<void> _save([Map<Identifier<Item>, Item>? entries]) async {
+    final ent = entries ?? _entries;
     await _storage.writeData(_group, {
-      'items': _entries.values.map(_serialize).toList(),
+      'items': ent.values.map(_serialize).toList(),
     });
+  }
+
+  Future<void> _persistAndLoad(Map<Identifier<Item>, Item> tmp) async {
+    await _save(tmp);
+    await _load();
   }
 }

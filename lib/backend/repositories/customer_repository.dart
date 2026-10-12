@@ -72,8 +72,9 @@ class CustomerRepository implements CustomerLookup {
         'A customer with the same name and phone already exists',
       );
     }
-    _entries[customer.id] = customer;
-    await _save();
+    final tmp = _snapshot;
+    tmp[customer.id] = customer;
+    await _persistAndLoad(tmp);
   }
 
   Future<void> update(Customer customer) async {
@@ -81,8 +82,9 @@ class CustomerRepository implements CustomerLookup {
     if (!_entries.containsKey(customer.id)) {
       throw NotFound('Customer ${customer.id} not found');
     }
-    _entries[customer.id] = customer;
-    await _save();
+    final tmp = _snapshot;
+    tmp[customer.id] = customer;
+    await _persistAndLoad(tmp);
   }
 
   Future<void> softDelete(Identifier<Customer> id) async {
@@ -91,47 +93,68 @@ class CustomerRepository implements CustomerLookup {
     if (existing == null) {
       throw NotFound('Customer $id not found');
     }
-    _entries[id] = existing.copyWith(isDeleted: true);
-    await _save();
+    final tmp = _snapshot;
+    tmp[id] = existing.copyWith(isDeleted: true);
+    await _persistAndLoad(tmp);
   }
 
   // ── lookup ───────────────────────────────────────────────────────
 
   @override
-  Future<Customer?> findById(Identifier<Customer> id) async {
+  Future<Customer?> findById(
+    Identifier<Customer> id, {
+    bool includeDeleted = false,
+  }) async {
     await _ensureLoaded();
-    return _entries[id]; // returns even if soft-deleted
+
+    final customer = _entries[id];
+
+    if (customer == null) return null;
+
+    if (!includeDeleted && customer.isDeleted) {
+      throw InvalidState("Cannot find customer: customer is deleted.");
+    }
+
+    return customer;
   }
 
   @override
   Future<Map<Identifier<Customer>, Customer>> findByIds(
-    Iterable<Identifier<Customer>> ids,
-  ) async {
+    Iterable<Identifier<Customer>> ids, {
+    bool includeDeleted = false,
+  }) async {
     await _ensureLoaded();
+
     return {
       for (final id in ids)
-        if (_entries[id] case final c?) id: c,
+        if (_entries[id] case final c?)
+          if (includeDeleted || !c.isDeleted) id: c,
     };
   }
 
-  Future<Customer?> findByIdActive(Identifier<Customer> id) async {
-    final c = await findById(id);
-    if (c == null || c.isDeleted) return null;
-    return c;
-  }
-
-  Future<Iterable<Customer>> findAll() async {
+  Future<Iterable<Customer>> findAll({bool includeDeleted = false}) async {
     await _ensureLoaded();
-    return _entries.values.where((c) => !c.isDeleted);
-  }
 
-  Future<Iterable<Customer>> findByName(String name) async {
-    await _ensureLoaded();
-    final q = name.toLowerCase();
-    return _entries.values.where(
-      (c) => !c.isDeleted && c.name.toLowerCase().contains(q),
+    return List.unmodifiable(
+      _entries.values.where((c) => includeDeleted || !c.isDeleted),
     );
   }
+
+  Future<Iterable<Customer>> findByName(
+    String name, {
+    bool includeDeleted = false,
+  }) async {
+    await _ensureLoaded();
+
+    final q = name.toLowerCase();
+
+    return _entries.values.where(
+      (c) =>
+          (includeDeleted || !c.isDeleted) && c.name.toLowerCase().contains(q),
+    );
+  }
+
+  Map<Identifier<Customer>, Customer> get _snapshot => Map.of(_entries);
 
   /// Checks whether any non-deleted entry has the same content
   /// significance as [candidate].
@@ -182,9 +205,15 @@ class CustomerRepository implements CustomerLookup {
     'isDeleted': c.isDeleted,
   };
 
-  Future<void> _save() async {
+  Future<void> _save([Map<Identifier<Customer>, Customer>? entries]) async {
+    final ent = entries ?? _entries;
     final raw = await _storage.readData(_group);
-    raw['customers'] = _entries.values.map(_serialize).toList();
+    raw['customers'] = ent.values.map(_serialize).toList();
     await _storage.writeData(_group, raw);
+  }
+
+  Future<void> _persistAndLoad(Map<Identifier<Customer>, Customer> tmp) async {
+    await _save(tmp);
+    await _load();
   }
 }
