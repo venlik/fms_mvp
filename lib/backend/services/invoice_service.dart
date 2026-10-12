@@ -9,18 +9,29 @@ import 'package:finance_management_system/backend/enums/payment_terms.dart';
 import 'package:finance_management_system/backend/pdf/document_fonts.dart';
 import 'package:finance_management_system/backend/pdf/invoice_pdf.dart';
 import 'package:finance_management_system/backend/repositories/invoice_repository.dart';
+import 'package:finance_management_system/backend/repositories/payment_repository.dart';
 import 'package:finance_management_system/backend/storage/app_storage.dart';
 import 'package:finance_management_system/backend/storage/logo_store.dart';
 
 class InvoiceService {
-  final InvoiceRepository _invoiceRepository;
+  final InvoiceRepository _invoices;
+  final PaymentRepository _payments; // ← added
   final Storage _storage;
   final LogoStore _store;
 
-  InvoiceService._(this._invoiceRepository, this._storage, this._store);
+  InvoiceService._(
+    this._invoices,
+    this._payments,
+    this._storage,
+    this._store,
+  );
 
-  factory InvoiceService.of(InvoiceRepository ir, Storage st, LogoStore ls) =>
-      InvoiceService._(ir, st, ls);
+  factory InvoiceService.of(
+    InvoiceRepository ir,
+    PaymentRepository pr,
+    Storage st,
+    LogoStore ls,
+  ) => InvoiceService._(ir, pr, st, ls);
 
   DraftInvoice createDraftInvoice({
     required Business business,
@@ -28,7 +39,7 @@ class InvoiceService {
     required Set<InvoiceItem> items,
     required PaymentTerms paymentTerms,
     String? notes,
-  }) => _invoiceRepository.createDraftInvoice(
+  }) => _invoices.createDraftInvoice(
     business: business,
     customer: customer,
     items: items,
@@ -37,20 +48,19 @@ class InvoiceService {
   );
 
   Future<Invoice> commit(DraftInvoice draft) async =>
-      await _invoiceRepository.commit(draft);
+      await _invoices.commit(draft);
 
   Future<Invoice?> findByNumber(DocumentNumber<Invoice> number) async =>
-      await _invoiceRepository.findByNumber(number);
+      await _invoices.findByNumber(number);
 
-  Future<Iterable<Invoice>?> findAll() async =>
-      await _invoiceRepository.findAll();
+  Future<Iterable<Invoice>?> findAll() async => await _invoices.findAll();
 
   Future<void> saveAsPdf(
     DocumentNumber<Invoice> ref, [
     String? name,
     DocumentFonts? fonts,
   ]) async {
-    final invoice = await _invoiceRepository.findByNumber(ref);
+    final invoice = await _invoices.findByNumber(ref);
     if (invoice == null) {
       throw NotFound('Invoice ${ref.toString()} not found');
     }
@@ -65,6 +75,19 @@ class InvoiceService {
     final pdfBytes = await ipdf.bytes(pdf);
     final resolvedName = name ?? "INV_${invoice.documentNumber.id}.pdf";
     await _storage.saveDocument(name: resolvedName, bytes: pdfBytes);
+  }
+
+  /// Balance due on [number]: invoice total minus payments received.
+  /// Positive = still owed. Zero = paid. Negative = overpaid.
+  /// Throws [NotFound] if the invoice doesn't exist.
+  Future<int> balanceCents(DocumentNumber<Invoice> number) async {
+    final invoice = await _invoices.findByNumber(number);
+    if (invoice == null) {
+      throw NotFound('Invoice $number not found');
+    }
+    final payments = await _payments.findByInvoice(number);
+    final paid = payments.fold<int>(0, (sum, p) => sum + p.amountInCents);
+    return invoice.totalCents - paid;
   }
 
   void preview(Invoice invoice) {}
