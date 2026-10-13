@@ -66,14 +66,15 @@ class DraftInvoice with InvoiceDetailsComparison {
   }
 
   void replaceItem(InvoiceItem oldItem, InvoiceItem newItem) {
-    if (!items.contains(oldItem)) {
+    final index = items.indexOf(oldItem);
+    if (index == -1) {
       throw NotFound('originalItem not found');
     }
-    if (items.contains(newItem)) {
+    final existing = items[index];
+
+    if (items.contains(newItem) && existing.quantity == newItem.quantity) {
       throw AlreadyExists('replacement Item already exists');
     }
-    final index = items.indexOf(oldItem);
-    if (index < 0) throw NotFound('originalItem not found'); //double check
     items[index] = newItem;
   }
 
