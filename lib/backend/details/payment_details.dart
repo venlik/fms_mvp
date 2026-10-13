@@ -23,17 +23,19 @@ class PaymentDetails with Equatable {
   final int amountInCents;
   final PaymentMethod method;
   final DocumentNumber<Invoice> invoiceNumber;
-  final String reference;
+  final String? reference;
+  final DateTime date;
 
   const PaymentDetails({
     required this.amountInCents,
     required this.method,
     required this.invoiceNumber,
-    required this.reference,
+    this.reference,
+    required this.date
   });
 
   @override
-  List<Object?> get props => [amountInCents, method, invoiceNumber, reference];
+  List<Object?> get props => [amountInCents, method, invoiceNumber, reference,date];
 
   @override
   String toString() =>

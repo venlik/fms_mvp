@@ -7,12 +7,14 @@ mixin PaymentDetailsComparison {
   int get amountInCents;
   PaymentMethod get method;
   DocumentNumber<Invoice> get invoiceNumber;
-  String get reference;
+  String? get reference;
+  DateTime get date;
 
   PaymentDetails get details => PaymentDetails(
     amountInCents: amountInCents,
     method: method,
     invoiceNumber: invoiceNumber,
     reference: reference,
+    date: date
   );
 }
