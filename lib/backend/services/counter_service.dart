@@ -38,11 +38,15 @@ class CounterService {
     return next;
   }
 
-  Future<void> reset(CounterKey key, int value) async {
-    final counters = await _readAll();
-    counters[key.id] = value;
-    await _writeAll(counters);
-  }
+  ///deffered API
+  // Future<void> reset(CounterKey key, int value) async {
+  //   if (value < 0) {
+  //     throw StateError("value can`t be negative");
+  //   }
+  //   final counters = await _readAll();
+  //   counters[key.id] = value;
+  //   await _writeAll(counters);
+  // }
 
   /// Full snapshot, for diagnostics or migrations.
   Future<Map<CounterKey, int>> snapshot() async {
@@ -76,4 +80,6 @@ class CounterService {
     data[_key] = counters;
     await storage.writeData(_group, data);
   }
-}
+
+  
+  }

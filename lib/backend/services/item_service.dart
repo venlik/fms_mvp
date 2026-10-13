@@ -39,5 +39,6 @@ class ItemService {
 
   // ── mutations ───────────────────────────────────────────────────
   Future<void> add(Item item) async => await _items.add(item);
-  Future<void> remove(Item item) => _items.remove(item);
+  Future<void> remove(Item item) async => await _items.remove(item.id);
+  Future<void> update(Item item) async => await _items.update(item);
 }
