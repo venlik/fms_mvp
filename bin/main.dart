@@ -27,33 +27,31 @@ void main() async {
   try {
     await itemService.commitAll(popularClothingItems);
   } catch (e) {
-    _print_E_(e);
+    _print(e);
   }
 
   try {
     await repo.businesses.commit(dummyBusiness);
   } catch (e) {
-    _print_E_(e);
+    _print(e);
   }
 
   try {
     await repo.businesses.commit(dummyBusiness1);
   } catch (e) {
-    _print_E_(e);
+    _print(e);
   }
 
   try {
-   
     await repo.customers.commit(dummyCustomer);
   } catch (e) {
-    _print_E_(e);
+    _print(e);
   }
 
   try {
-  
     await repo.customers.commit(dummyCustomer1);
   } catch (e) {
-    _print_E_(e);
+    _print(e);
   }
 
   try {
@@ -69,7 +67,7 @@ void main() async {
       ),
     );
   } catch (e) {
-    _print_E_(e);
+    _print(e);
   }
 
   final invEnt = await invoiceService.findAll();
@@ -83,20 +81,27 @@ void main() async {
           method: PaymentMethod.mpesa,
           amountInCents: 200,
           reference: "SQJT8U20JK",
+          date: DateTime.timestamp(),
         ),
+        await invoiceService.balanceCents(inv.documentNumber),
       );
       final receipt = await receiptService.generate(invoice: inv, payment: pay);
-      print('saving invoice....');
+      _print('saving invoice....');
       await invoiceService.saveAsPdf(inv.documentNumber);
-      print('saving receipt...');
+      _print('saving receipt...');
+
       await receiptService.saveAsPdf(receipt);
     } catch (e) {
-      _print_E_(e);
+      _print(e);
     }
   }
-  print("done");
+  _print("done");
 }
 
-void _print_E_(dynamic e) {
-  print(e);
+void _print(dynamic e) {
+  assert(() {
+    // ignore: avoid_print
+    print(e);
+    return true;
+  }());
 }
