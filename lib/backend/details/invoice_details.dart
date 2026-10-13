@@ -40,7 +40,13 @@ class InvoiceDetails with Equatable {
   }
 
   @override
-  List<Object?> get props => [businessId, customerId, ...items, terms, date];
+  List<Object?> get props => [
+    businessId,
+    customerId,
+    ...items.map((it) => (it.item, it.quantity)),
+    terms,
+    date,
+  ];
 
   @override
   String toString() =>
