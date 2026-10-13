@@ -51,6 +51,9 @@ abstract class Storage {
 
   Future<void> writeData(StorageGroup group, Map<String, dynamic> data) async {
     final original = await dataPath(group);
+
+    // Recover from a partial write before write.
+    await _recoverIfNeeded(original);
     await original.parent.create(recursive: true);
 
     final path = original.path;
@@ -87,17 +90,7 @@ abstract class Storage {
       if (originalBackedUp) {
         await backup.delete();
       }
-      // } catch (_) {
-
-      //   // Rollback: restore .old if the install never completed.
-      //   if (originalBackedUp && !newInstalled) {
-      //     if (!await original.exists() && await backup.exists()) {
-      //       await backup.rename(path);
-      //     }
-      //   }
-      //   rethrow;
-      // }
-    } catch (e) {
+    } catch (_) {
       assert(() {
         // ignore: avoid_print
         print(
