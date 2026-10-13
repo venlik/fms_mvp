@@ -13,22 +13,27 @@ class Payment with PaymentDetailsComparison implements Entity {
   final PaymentMethod method;
   @override
   final DocumentNumber<Invoice> invoiceNumber;
+  @override
   final DateTime date;
   @override
-  final String reference;
+  final String? reference;
   final String? notes;
   final bool isDeleted;
 
-  const Payment({
+  Payment({
     required this.id,
-    required this.amountInCents,
+    required int amountInCents,
     required this.method,
     required this.invoiceNumber,
     required this.date,
-    required this.reference,
+    this.reference,
     this.notes,
     this.isDeleted = false,
-  });
+  }) : amountInCents = amountInCents >= 0
+           ? amountInCents
+           : throw StateError(
+               "Amount can`t be negative: amountInCents=$amountInCents",
+             );
 
   static const _notSet = Object();
 
@@ -45,7 +50,7 @@ class Payment with PaymentDetailsComparison implements Entity {
     PaymentMethod? method,
     DocumentNumber<Invoice>? invoiceNumber,
     DateTime? date,
-    String? reference,
+    Object? reference = _notSet,
     Object? notes = _notSet,
     bool? isDeleted,
   }) {
@@ -55,7 +60,7 @@ class Payment with PaymentDetailsComparison implements Entity {
       method: method ?? this.method,
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
       date: date ?? this.date,
-      reference: reference ?? this.reference,
+      reference: identical(reference, _notSet) ?this.reference : reference as String?,
       notes: identical(notes, _notSet) ? this.notes : notes as String?,
       isDeleted: isDeleted ?? this.isDeleted,
     );

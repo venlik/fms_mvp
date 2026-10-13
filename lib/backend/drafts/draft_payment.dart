@@ -10,13 +10,15 @@ import 'package:finance_management_system/backend/models/invoice.dart';
 class DraftPayment with PaymentDetailsComparison {
   @override
   final DocumentNumber<Invoice> invoiceNumber;
+  @override
+  final DateTime date;
 
   @override
   PaymentMethod method;
   @override
   int amountInCents;
   @override
-  String reference;
+  String? reference;
 
   String? notes;
 
@@ -25,10 +27,13 @@ class DraftPayment with PaymentDetailsComparison {
   DraftPayment({
     required this.invoiceNumber,
     this.method = PaymentMethod.cash,
-    this.amountInCents = 0,
-    required this.reference,
+    int amountInCents = 0,
+    this.reference,
     this.notes,
-  });
+    required this.date,
+  }) : amountInCents = amountInCents >= 0
+           ? amountInCents
+           : throw StateError("amount must be >= 0");
 
   bool get isValid => amountInCents > 0;
 
@@ -36,15 +41,19 @@ class DraftPayment with PaymentDetailsComparison {
     DocumentNumber<Invoice>? invoiceNumber,
     PaymentMethod? method,
     int? amountInCents,
-    String? reference,
+    Object? reference = _notSet,
     Object? notes = _notSet,
+    DateTime? date,
   }) {
     return DraftPayment(
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
       method: method ?? this.method,
       amountInCents: amountInCents ?? this.amountInCents,
-      reference: reference ?? this.reference,
+      reference: identical(reference, _notSet)
+          ? this.reference
+          : reference as String?,
       notes: identical(notes, _notSet) ? this.notes : notes as String?,
+      date: date ?? this.date,
     );
   }
 }
