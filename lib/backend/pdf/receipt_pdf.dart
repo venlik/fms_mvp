@@ -21,8 +21,8 @@ class ReceiptPdf extends DocumentPdf {
     return [
       MetaRow('Date:', DocFormat.date(_payment.date)),
       MetaRow('Payment Method:', _payment.method.label),
-      // if (payment.reference != null && payment.reference!.isNotEmpty)- no effect
-      MetaRow('Reference:', _payment.reference),
+      if (_payment.reference case final reference? when reference.isNotEmpty)
+        MetaRow('Reference:', reference),
       MetaRow('Invoice No:', _payment.invoiceNumber.toString()),
       MetaRow(
         'Amount Paid:',
