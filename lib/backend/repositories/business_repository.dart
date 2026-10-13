@@ -75,14 +75,18 @@ class BusinessRepository implements BusinessLookup {
 
   // ── already-identified ───────────────────────────────────────────
 
-  Future<void> add(Business business) async {
+  Future<void> add(
+    Business business, [
+    Map<Identifier<Business>, Business>? snapshot,
+  ]) async {
     await _ensureLoaded();
-    if (await _contentExists(business) || _entries[business.id] != null) {
+    final ent = snapshot ?? _entries;
+    if (await _contentExists(business, ent) || ent[business.id] != null) {
       throw AlreadyExists(
         'Business with details (${business.details}) already exists',
       );
     }
-    final tmp = _snapshot;
+    final tmp = snapshot ?? _snapshot;
     tmp[business.id] = business;
     await _persistAndLoad(tmp);
   }
@@ -135,32 +139,33 @@ class BusinessRepository implements BusinessLookup {
     await _ensureLoaded();
     final id = business.id;
     final tmp = _snapshot;
-    tmp.update(
-      id,
-      (business) => business.copyWith(isDeleted: true),
-      ifAbsent: () => throw NotFound("Business[${business.id}] not found"),
-    );
+    final existing = tmp[id];
+
+    if (existing != null) {
+      tmp[id] = existing.copyWith(isDeleted: true);
+    } else {
+      throw NotFound("Business[${business.id}] not found");
+    }
+
     await _persistAndLoad(tmp);
   }
 
-  ///Replaces an old business with a new business,
-  ///both new and old must share the same identifier
-  Future<void> edit(Business oldBusiness, Business newBusiness) async {
+  ///Replaces an existing business with the newBusiness,
+  ///throws [NotFound] if a business with the same id doesn`t exist,
+  ///throws [StateError] if the operation fails,
+  Future<void> update(Business newBusiness) async {
     await _ensureLoaded();
-    final id = oldBusiness.id;
-    final nbId = newBusiness.id;
-    if (id != nbId) {
-      throw StateError(
-        "Id mismatch ==> (newBusiness.id=$nbId) != (oldBusiness.id= $id)",
-      );
+    final id = newBusiness.id;
+    if (_entries[id] == null) {
+      throw NotFound("Business $id not found");
     }
     final tmp = _snapshot;
-    tmp.update(
-      id,
-      (business) => newBusiness,
-      ifAbsent: () => throw NotFound("Business[$id] not found"),
-    );
-    await _persistAndLoad(tmp);
+    if (tmp.remove(id) != null) {
+      await add(newBusiness, tmp);
+    } else {
+      throw StateError("Business Edit failed");
+    }
+    // await _persistAndLoad(tmp);
   }
 
   Map<Identifier<Business>, Business> get _snapshot => Map.of(_entries);
@@ -188,9 +193,13 @@ class BusinessRepository implements BusinessLookup {
   }
 
   // BusinessRepository
-  Future<bool> _contentExists(BusinessDetailsComparison candidate) async {
+  Future<bool> _contentExists(
+    BusinessDetailsComparison candidate, [
+    Map<Identifier<Business>, Business>? snapshot,
+  ]) async {
     await _ensureLoaded();
-    return _entries.values
+    final entries = snapshot ?? _entries;
+    return entries.values
         .where((b) => !(b.isDeleted))
         .any((b) => b.details == candidate.details);
   }

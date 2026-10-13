@@ -65,14 +65,18 @@ class CustomerRepository implements CustomerLookup {
 
   // ── already-identified ───────────────────────────────────────────
 
-  Future<void> add(Customer customer) async {
+  Future<void> add(
+    Customer customer, [
+    Map<Identifier<Customer>, Customer>? snapshot,
+  ]) async {
     await _ensureLoaded();
-    if (_entries.containsKey(customer.id) || await _contentExists(customer)) {
+    final ent = snapshot ?? _entries;
+    if (ent.containsKey(customer.id) || await _contentExists(customer, ent)) {
       throw AlreadyExists(
         'A customer with the same name and phone already exists',
       );
     }
-    final tmp = _snapshot;
+    final tmp = snapshot ?? _snapshot;
     tmp[customer.id] = customer;
     await _persistAndLoad(tmp);
   }
@@ -83,8 +87,10 @@ class CustomerRepository implements CustomerLookup {
       throw NotFound('Customer ${customer.id} not found');
     }
     final tmp = _snapshot;
-    tmp[customer.id] = customer;
-    await _persistAndLoad(tmp);
+    if (_snapshot.remove(customer.id) != null) {
+      await add(customer, tmp);
+    }
+    //await _persistAndLoad(tmp);
   }
 
   Future<void> softDelete(Identifier<Customer> id) async {
@@ -158,9 +164,13 @@ class CustomerRepository implements CustomerLookup {
 
   /// Checks whether any non-deleted entry has the same content
   /// significance as [candidate].
-  Future<bool> _contentExists(CustomerDetailsComparison candidate) async {
+  Future<bool> _contentExists(
+    CustomerDetailsComparison candidate, [
+    Map<Identifier<Customer>, Customer>? snapshot,
+  ]) async {
     await _ensureLoaded();
-    return _entries.values
+    final entries = snapshot ?? _entries;
+    return entries.values
         .where((c) => !c.isDeleted)
         .any((c) => c.details == candidate.details);
   }

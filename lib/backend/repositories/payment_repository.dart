@@ -40,17 +40,19 @@ class PaymentRepository implements PaymentLookup {
     required DocumentNumber<Invoice> invoiceNumber,
     PaymentMethod method = PaymentMethod.cash,
     int amountInCents = 0,
-    required String reference,
+    String? reference,
     String? notes,
+    DateTime? date,
   }) => DraftPayment(
     invoiceNumber: invoiceNumber,
     method: method,
     amountInCents: amountInCents,
     reference: reference,
     notes: notes,
+    date: date ?? DateTime.timestamp(),
   );
 
-  Future<Payment> commit(DraftPayment draft) async {
+  Future<Payment> commit(DraftPayment draft, int invoiceBalance) async {
     if (!draft.isValid) {
       throw InvalidState('Payment draft is incomplete');
     }
@@ -64,14 +66,16 @@ class PaymentRepository implements PaymentLookup {
     if (invoice == null) {
       throw NotFound('Invoice ${draft.invoiceNumber.id} not found');
     }
-
+    if (draft.amountInCents > invoiceBalance) {
+      throw StateError("Payment amount exceeds Invoice balance");
+    }
     final n = await _counters.allocate(CounterKey.payment);
     final payment = Payment(
       id: Identifier<Payment>(n),
       amountInCents: draft.amountInCents,
       method: draft.method,
       invoiceNumber: draft.invoiceNumber,
-      date: DateTime.now(),
+      date: draft.date,
       reference: draft.reference,
       notes: draft.notes,
     );
@@ -167,7 +171,7 @@ class PaymentRepository implements PaymentLookup {
     method: PaymentMethod.values.byName(json['method'] as String),
     invoiceNumber: DocumentNumber(json['invoiceNumber'] as int),
     date: DateTime.parse(json['date'] as String),
-    reference: json['reference'] as String,
+    reference: json['reference'] as String?,
     notes: json['notes'] as String?,
     isDeleted: json['isDeleted'] as bool? ?? false,
   );

@@ -113,7 +113,10 @@ class InvoiceRepository implements InvoiceLookup {
   Future<void> delete(DocumentNumber<Invoice> number) async {
     await _ensureLoaded();
     final tmp = _snapshot;
-    if (tmp.remove(number) == null) {
+    final existing = tmp[number];
+    if (existing != null) {
+      tmp[number] = existing.copyWith(isDeleted: true);
+    } else {
       throw NotFound('Invoice $number not found');
     }
     await _persistAndLoad(tmp);
@@ -167,7 +170,9 @@ class InvoiceRepository implements InvoiceLookup {
   Future<void> _load() async {
     final raw = await _storage.readData(_group);
     final list = raw['invoices'];
+
     if (list is List) {
+      _entries.clear();
       for (final json in list.cast<Map<String, dynamic>>()) {
         final inv = await _deserialize(json);
         _entries[inv.documentNumber] = inv;

@@ -73,9 +73,11 @@ class ItemRepository implements ItemLookup {
       try {
         await commit(draft);
       } on AlreadyExists catch (_) {
-        print(
-          "skipped: [${draft.details}] reason: [exists]",
-        ); //TODO: remove print statement
+        assert(() {
+          // ignore: avoid_print
+          print("skipped: [${draft.details}] reason: [exists]");
+          return true;
+        }()); //TODO: report skipped to caller
         continue;
       } catch (_) {
         rethrow;
@@ -85,24 +87,40 @@ class ItemRepository implements ItemLookup {
 
   // ── already-identified ──────────────────────────────────────────
 
-  Future<void> add(Item item) async {
+  Future<void> add(Item item, [Map<Identifier<Item>, Item>? snapshot]) async {
     await _ensureLoaded();
-    if (_entries.containsKey(item.id) || await _contentExists(item)) {
+    final ent = snapshot ?? _entries;
+    if (ent.containsKey(item.id) || await _contentExists(item, ent)) {
       throw AlreadyExists('Item with details (${item.details}) already exists');
     }
-    final tmp = _snapshot;
+    final tmp = snapshot ?? _snapshot;
     tmp[item.id] = item;
     await _persistAndLoad(tmp);
   }
 
-  Future<void> remove(Item item) async {
+  Future<void> remove(Identifier<Item> itemId) async {
     await _ensureLoaded();
-    if (!_entries.containsKey(item.id)) {
-      throw NotFound('Item ${item.id} not found');
+    final existing = _entries[itemId];
+    if (existing == null) {
+      throw NotFound('Item $itemId not found');
     }
     final tmp = _snapshot;
-    tmp[item.id] = item.copyWith(isDeleted: true);
+    tmp[itemId] = existing.copyWith(isDeleted: true);
     await _persistAndLoad(tmp);
+  }
+
+  Future<void> update(Item item) async {
+    await _ensureLoaded();
+    final id = item.id;
+    if (!_entries.containsKey(id)) {
+      throw NotFound("Item $id not found");
+    }
+    final tmp = _snapshot;
+
+    if (tmp.remove(id) == null) {
+      throw StateError("Item Update failed");
+    }
+    await add(item, tmp);
   }
 
   // ── lookup ──────────────────────────────────────────────────────
@@ -146,9 +164,13 @@ class ItemRepository implements ItemLookup {
     );
   }
 
-  Future<bool> _contentExists(ItemDetailsComparison candidate) async {
+  Future<bool> _contentExists(
+    ItemDetailsComparison candidate, [
+    Map<Identifier<Item>, Item>? snapshot,
+  ]) async {
     await _ensureLoaded();
-    return _entries.values
+    final entries = snapshot ?? _entries;
+    return entries.values
         .where((it) => !it.isDeleted)
         .any((it) => it.details == candidate.details);
   }
