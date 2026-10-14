@@ -30,10 +30,6 @@ class MetaRow {
 abstract class DocumentPdf {
   const DocumentPdf();
 
-  /// Rows per chunk in the items table. Tune if descriptions wrap
-  /// beyond two lines or you change row padding.
-  static const int _rowsPerChunk = 16;
-
   // ── Hooks ───────────────────────────────────────────────────────
 
   /// Text shown top-right on page 1 and in the PDF metadata title.
@@ -86,7 +82,7 @@ abstract class DocumentPdf {
               pw.SizedBox(height: 18),
             ],
           ),
-          ..._itemsTableChunked(invoice),
+          _itemsTable(invoice),
           pw.SizedBox(height: 18),
           notesBlock(invoice),
         ],
@@ -288,14 +284,16 @@ abstract class DocumentPdf {
 
   // ── Items table ─────────────────────────────────────────────────
 
-  List<pw.Widget> _itemsTableChunked(Invoice invoice) {
+  /// Builds a single spanning table. The pdf package automatically
+  /// splits it across pages and repeats the header row.
+  pw.Widget _itemsTable(Invoice invoice) {
     final currency = invoice.business.configuredCurrency;
 
     final items = invoice.items.toList()
       ..sort((a, b) => a.itemId.compareTo(b.itemId));
 
     if (items.isEmpty) {
-      return [pw.Text('No items.', style: const pw.TextStyle(fontSize: 9.5))];
+      return pw.Text('No items.', style: const pw.TextStyle(fontSize: 9.5));
     }
 
     final headerStyle = pw.TextStyle(
@@ -304,80 +302,67 @@ abstract class DocumentPdf {
     );
     final bodyStyle = const pw.TextStyle(fontSize: 9.5);
 
-    pw.TableRow headerRow() => pw.TableRow(
-      decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-      children: [
-        _cell('Item', style: headerStyle),
-        _cell('Description', style: headerStyle),
-        _cell('Quantity', style: headerStyle),
-        _cell('Rate', style: headerStyle),
-        _cell('Amount', style: headerStyle, align: pw.TextAlign.right),
-      ],
-    );
-
-    pw.TableRow totalsRow(double total) => pw.TableRow(
-      decoration: const pw.BoxDecoration(color: PdfColors.grey100),
-      children: [
-        _cell('', style: headerStyle),
-        _cell('', style: headerStyle),
-        _cell('', style: headerStyle),
-        _cell('Total', style: headerStyle, align: pw.TextAlign.right),
-        _cell(
-          '$currency ${DocFormat.money(total)}',
-          style: headerStyle,
-          align: pw.TextAlign.right,
-        ),
-      ],
-    );
-
-    final widgets = <pw.Widget>[];
     final total = DocFormat.total(invoice);
 
-    for (var i = 0; i < items.length; i += _rowsPerChunk) {
-      final chunk = items.skip(i).take(_rowsPerChunk).toList();
-      final isLastChunk = i + _rowsPerChunk >= items.length;
-
-      widgets.add(
-        pw.Table(
-          border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
-          columnWidths: const {
-            0: pw.FlexColumnWidth(2),
-            1: pw.FlexColumnWidth(4),
-            2: pw.FlexColumnWidth(1.2),
-            3: pw.FlexColumnWidth(2),
-            4: pw.FlexColumnWidth(2.2),
-          },
-          children: <pw.TableRow>[
-            headerRow(),
-            for (final item in chunk)
-              pw.TableRow(
-                children: [
-                  _cell(item.name, style: bodyStyle),
-                  _cell(item.description, style: bodyStyle),
-                  _cell(DocFormat.number(item.quantity), style: bodyStyle),
-                  _cell(
-                    '$currency ${DocFormat.money(item.priceInCents / 100)}',
-                    style: bodyStyle,
-                  ),
-                  _cell(
-                    '$currency ${DocFormat.money(item.priceInCents * item.quantity / 100)}',
-                    style: bodyStyle,
-                    align: pw.TextAlign.right,
-                  ),
-                ],
-              ),
-            // Totals row only on the last chunk.
-            if (isLastChunk) totalsRow(total),
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+      columnWidths: const {
+        0: pw.FlexColumnWidth(2),
+        1: pw.FlexColumnWidth(4),
+        2: pw.FlexColumnWidth(1.2),
+        3: pw.FlexColumnWidth(2),
+        4: pw.FlexColumnWidth(2.2),
+      },
+      children: [
+        // Header – repeats on every continuation page
+        pw.TableRow(
+          repeat: true,
+          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+          children: [
+            _cell('Item', style: headerStyle),
+            _cell('Description', style: headerStyle),
+            _cell('Quantity', style: headerStyle),
+            _cell('Rate', style: headerStyle),
+            _cell('Amount', style: headerStyle, align: pw.TextAlign.right),
           ],
         ),
-      );
 
-      if (!isLastChunk) {
-        widgets.add(pw.SizedBox(height: 12));
-      }
-    }
+        // Data rows
+        for (final item in items)
+          pw.TableRow(
+            children: [
+              _cell(item.name, style: bodyStyle),
+              _cell(item.description, style: bodyStyle),
+              _cell(DocFormat.number(item.quantity), style: bodyStyle),
+              _cell(
+                '$currency ${DocFormat.money(item.priceInCents / 100)}',
+                style: bodyStyle,
+              ),
+              _cell(
+                '$currency ${DocFormat.money(item.priceInCents * item.quantity / 100)}',
+                style: bodyStyle,
+                align: pw.TextAlign.right,
+              ),
+            ],
+          ),
 
-    return widgets;
+        // Totals row – appears only once, after the last data row
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+          children: [
+            _cell('', style: headerStyle),
+            _cell('', style: headerStyle),
+            _cell('', style: headerStyle),
+            _cell('Total', style: headerStyle, align: pw.TextAlign.right),
+            _cell(
+              '$currency ${DocFormat.money(total)}',
+              style: headerStyle,
+              align: pw.TextAlign.right,
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   pw.Widget _cell(
