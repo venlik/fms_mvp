@@ -12,10 +12,6 @@ import 'package:finance_management_system/backend/models/invoice.dart';
 ///   • [invoiceNumber]  — which invoice it settles
 ///   • [reference]      — external reference (M-Pesa code, cheque no.)
 ///
-/// Intentionally excluded:
-///   • date  — when it was recorded, not what the transaction is
-///   • notes — annotation, not content
-///
 /// Note: if [reference] is empty or generic (e.g. "cash"), two
 /// otherwise-identical payments are indistinguishable. That's the
 /// limit of the data model — the reference is the disambiguator.
@@ -31,11 +27,17 @@ class PaymentDetails with Equatable {
     required this.method,
     required this.invoiceNumber,
     this.reference,
-    required this.date
+    required this.date,
   });
 
   @override
-  List<Object?> get props => [amountInCents, method, invoiceNumber, reference,date];
+  List<Object?> get props => [
+    amountInCents,
+    method,
+    invoiceNumber,
+    reference,
+    date,
+  ];
 
   @override
   String toString() =>
