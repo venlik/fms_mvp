@@ -87,7 +87,7 @@ class CustomerRepository implements CustomerLookup {
       throw NotFound('Customer ${customer.id} not found');
     }
     final tmp = _snapshot;
-    if (_snapshot.remove(customer.id) != null) {
+    if (tmp.remove(customer.id) != null) {
       await add(customer, tmp);
     }
     //await _persistAndLoad(tmp);
