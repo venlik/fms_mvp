@@ -5,8 +5,10 @@ import 'package:finance_management_system/backend/exceptions.dart';
 import 'package:finance_management_system/backend/models/business.dart';
 import 'package:finance_management_system/backend/models/customer.dart';
 import 'package:finance_management_system/backend/models/document_number.dart';
+import 'package:finance_management_system/backend/models/identifier.dart';
 import 'package:finance_management_system/backend/models/invoice.dart';
 import 'package:finance_management_system/backend/models/invoice_item.dart';
+import 'package:finance_management_system/backend/models/item.dart';
 
 /// Editable content for a not-yet-issued invoice.
 /// No documentNumber, no derived totals stored.
@@ -19,8 +21,8 @@ class DraftInvoice with InvoiceDetailsComparison {
   DateTime date;
   @override
   PaymentTerms terms;
-  @override
-  List<InvoiceItem> items;
+
+  List<InvoiceItem> _items;
   String? notes;
 
   static const _notSet = Object();
@@ -33,49 +35,86 @@ class DraftInvoice with InvoiceDetailsComparison {
     Set<InvoiceItem>? items,
     this.notes,
   }) : date = date ?? DateTime.now(),
-       items = items?.toSet().toList() ?? [];
+       _items = items?.toSet().toList() ?? [];
+       
+  @override
+  List<InvoiceItem> get items => List.unmodifiable(_items);
 
+  List<InvoiceItem> get _snapshot => List.of(_items);
   // ── Derived (computed, never stored) ───────────────────────────
 
   DateTime get dueDate => terms.dueDate(date);
 
-  int get subtotalCents => items.fold(0, (sum, i) => sum + i.lineTotalCents);
+  int get subtotalCents => _items.fold(0, (sum, i) => sum + i.lineTotalCents);
 
   bool get canIssue =>
       business != null &&
       customer != null &&
-      items.isNotEmpty &&
-      items.every((i) => i.quantity >= 1);
+      _items.isNotEmpty &&
+      _items.every((i) => i.quantity >= 1);
 
   // ── Item operations ────────────────────────────────────────────
 
-  void addItem(InvoiceItem item) {
-    if (!items.contains(item)) {
-      items.add(item);
+  void addItem(InvoiceItem item, {List<InvoiceItem>? target}) {
+    final itms = target ?? _items;
+    if (!itms.contains(item)) {
+      itms.add(item);
     } else {
       throw AlreadyExists("Item already Exists");
     }
   }
 
-  void removeItem(InvoiceItem item) {
-    if (items.contains(item)) {
-      items.remove(item);
+  void removeItem(InvoiceItem item, {List<InvoiceItem>? target}) {
+    final itms = target ?? _items;
+    if (itms.contains(item)) {
+      itms.remove(item);
     } else {
       throw NotFound("Item not found");
     }
   }
 
-  void replaceItem(InvoiceItem oldItem, InvoiceItem newItem) {
-    final index = items.indexOf(oldItem);
+  void replaceItem(
+    InvoiceItem oldItem,
+    InvoiceItem newItem, {
+    List<InvoiceItem>? target,
+  }) {
+    final itms = target ?? _items;
+    final index = itms.indexOf(oldItem);
     if (index == -1) {
       throw NotFound('originalItem not found');
     }
-    final existing = items[index];
+    final existing = itms[index];
 
-    if (items.contains(newItem) && existing.quantity == newItem.quantity) {
+    if (itms.contains(newItem) && existing.quantity == newItem.quantity) {
       throw AlreadyExists('replacement Item already exists');
     }
-    items[index] = newItem;
+    itms[index] = newItem;
+  }
+
+  void modifyQuantity(
+    Identifier<Item> itemId,
+    int quantity, {
+    List<InvoiceItem>? target,
+  }) {
+    final itms = target ?? _items;
+    final index = itms.indexWhere((entry) => entry.item.id == itemId);
+
+    if (index == -1) {
+      throw NotFound('Invoice item not found');
+    }
+
+    final snapshot = _snapshot;
+    final existing = snapshot.removeAt(index);
+
+    // Validate and add to the snapshot, not the original items.
+    addItem(
+      InvoiceItem(item: existing.item, quantity: quantity),
+      target: snapshot,
+    );
+
+    itms
+      ..clear()
+      ..addAll(snapshot);
   }
 
   // ── Commit ─────────────────────────────────────────────────────
@@ -93,7 +132,7 @@ class DraftInvoice with InvoiceDetailsComparison {
       date: date,
       business: business!,
       customer: customer!,
-      items: Set.of(items),
+      items: Set.of(_items),
       terms: terms,
       notes: notes,
     );
@@ -116,7 +155,7 @@ class DraftInvoice with InvoiceDetailsComparison {
           : customer as Customer?,
       date: date ?? this.date,
       terms: terms ?? this.terms,
-      items: items ?? this.items.toSet(),
+      items: items ?? _items.toSet(),
       notes: identical(notes, _notSet) ? this.notes : notes as String?,
     );
   }
