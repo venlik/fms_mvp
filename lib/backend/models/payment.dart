@@ -29,10 +29,10 @@ class Payment with PaymentDetailsComparison implements Entity {
     this.reference,
     this.notes,
     this.isDeleted = false,
-  }) : amountInCents = amountInCents >= 0
+  }) : amountInCents = amountInCents > 0
            ? amountInCents
            : throw StateError(
-               "Amount can`t be negative: amountInCents=$amountInCents",
+               "Amount must be greater than 0: amountInCents=$amountInCents",
              );
 
   static const _notSet = Object();
@@ -60,7 +60,9 @@ class Payment with PaymentDetailsComparison implements Entity {
       method: method ?? this.method,
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
       date: date ?? this.date,
-      reference: identical(reference, _notSet) ?this.reference : reference as String?,
+      reference: identical(reference, _notSet)
+          ? this.reference
+          : reference as String?,
       notes: identical(notes, _notSet) ? this.notes : notes as String?,
       isDeleted: isDeleted ?? this.isDeleted,
     );
