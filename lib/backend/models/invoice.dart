@@ -36,7 +36,7 @@ class Invoice with InvoiceDetailsComparison {
   }) : items = Set.unmodifiable(items);
 
   DateTime get dueDate => terms.dueDate(date);
-  
+
   int get totalCents =>
       items.fold(0, (sum, it) => sum + it.priceInCents * it.quantity);
 
