@@ -32,7 +32,7 @@ class InvoicePdf extends DocumentPdf {
         : 'Payment is due by the date shown above. '
               'Please reference the invoice number on all payments.';
 
-    return _sideLabelRow('Terms:', body);
+    return _sideLabelRow('NOTES:', body);
   }
 }
 

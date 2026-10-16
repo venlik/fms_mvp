@@ -36,7 +36,7 @@ class ReceiptPdf extends DocumentPdf {
   pw.Widget notesBlock(Invoice invoice) {
     //ignore the provided invoice
     final body = (receipt.payment.notes?.isNotEmpty ?? false)
-        ? receipt.payment.notes!
+        ? "NOTES: ${receipt.payment.notes!}"
         : 'Great doing business with you.';
 
     return pw.Row(
