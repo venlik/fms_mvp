@@ -1,3 +1,4 @@
+import 'package:finance_management_system/backend/exceptions.dart';
 import 'package:finance_management_system/backend/models/identifier.dart'
     show IdentifierExtras;
 import 'package:finance_management_system/backend/models/item.dart';
@@ -21,7 +22,7 @@ class InvoiceItem {
 
   InvoiceItem({required this.item, required this.quantity}) {
     if (quantity < 1) {
-      throw Exception('Quantity must be >= 1: quantity = $quantity');
+      throw InvalidState('Quantity must be >= 1: quantity = $quantity');
     }
   }
 
@@ -42,5 +43,5 @@ class InvoiceItem {
   bool operator ==(Object other) =>
       identical(this, other) || other is InvoiceItem && other.item == item;
   @override
-  int get hashCode => item.hashCode << 10;
+  int get hashCode => item.hashCode;
 }
