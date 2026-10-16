@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-/// Font payloads for PDF generation. Two families:
-///   • primary   — the main text font (Latin, currency, punctuation).
-///   • alternate — consulted as a fallback when primary lacks a glyph.
+/// Font payloads for PDF generation. Two families:<br>
+///   • primary   — the main text font (Latin, currency, punctuation).<br>
+///   • alternate — consulted as a fallback when primary lacks a glyph.<br>
 ///
 /// Both optional. If omitted, `pdf`'s built-in Helvetica is used.
 class DocumentFonts {
