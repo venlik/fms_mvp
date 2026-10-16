@@ -1,4 +1,4 @@
-package com.example.finance_management_system
+package com.pace.android
 
 import io.flutter.embedding.android.FlutterActivity
 
