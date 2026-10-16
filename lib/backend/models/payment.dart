@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:finance_management_system/backend/details/payment_details_comparison.dart';
 import 'package:finance_management_system/backend/enums/payment_method.dart';
+import 'package:finance_management_system/backend/exceptions.dart';
 import 'package:finance_management_system/backend/models/document_number.dart';
 import 'package:finance_management_system/backend/models/identifier.dart';
 import 'package:finance_management_system/backend/models/invoice.dart';
@@ -26,14 +27,15 @@ class Payment with PaymentDetailsComparison implements Entity {
     required this.method,
     required this.invoiceNumber,
     required this.date,
-    this.reference,
+    String? reference,
     this.notes,
     this.isDeleted = false,
   }) : amountInCents = amountInCents > 0
            ? amountInCents
-           : throw StateError(
+           : throw InvalidState(
                "Amount must be greater than 0: amountInCents=$amountInCents",
-             );
+             ),
+       reference = reference?.isEmpty ?? true ? null : reference;
 
   static const _notSet = Object();
 
