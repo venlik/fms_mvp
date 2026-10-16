@@ -5,7 +5,8 @@ enum StorageGroup {
   invoices(file: 'invoices.json'),
   payments(file: 'payments.json'),
   businesses(file: 'businesses.json'),
-  customers(file: 'customers.json');
+  customers(file: 'customers.json'),
+  receipts(file: 'receipts.json');
 
   const StorageGroup({required this.file});
   final String file;
