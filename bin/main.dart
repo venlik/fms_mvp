@@ -1,107 +1,85 @@
-import 'package:finance_management_system/backend/drafts/draft_invoice.dart';
-import 'package:finance_management_system/backend/drafts/draft_payment.dart';
-import 'package:finance_management_system/backend/enums/payment_method.dart';
-import 'package:finance_management_system/backend/enums/payment_terms.dart';
-import 'package:finance_management_system/backend/models/invoice_item.dart';
-import 'package:finance_management_system/backend/services/bootstrap.dart';
-import 'package:finance_management_system/frontend/cli/cli_services/cli_logo_store.dart';
-import 'package:finance_management_system/frontend/cli/cli_services/cli_storage.dart';
-import 'package:finance_management_system/test%20files/dummy_objects.dart';
+// bin/main.dart
+//
+// Interactive REPL over the finance management system.
+//
+// Usage:
+//   dart run bin/main.dart
+//
+// Exit with `exit`, `quit`, or Ctrl+D. Type `help` for commands.
 
-void main() async {
+import 'dart:io';
+
+import 'package:cli_repl/cli_repl.dart';
+import 'package:finance_management_system/backend/services/bootstrap.dart';
+import 'package:finance_management_system/frontend/cli/platform/cli_logo_store.dart';
+import 'package:finance_management_system/frontend/cli/platform/cli_storage.dart';
+
+import 'repl/commands.dart';
+
+Future<void> main() async {
+  // Paths for the dev-mode data store. These live next to the project
+  // and are ignored by git.
   const env = {
     'APP_DIR': 'z_store.dbg/.app',
     'DOCS_DIR': 'z_store.dbg/.docs',
     'DOWNLOAD_DIR': 'z_store.dbg/.downloads',
   };
-  final storage = CLIStorage.fromEnvironment(env);
-  final store = LocalLogoStore();
 
-  final services = await bootStrapServices(storage, store);
-  final repo = services.repos;
-  final itemService = services.itemService;
-
-  final invoiceService = services.invoiceService;
-  final receiptService = services.receiptService;
-
+  // Build the storage adapter. If any required directory is missing
+  // or invalid, CLIStorage.fromEnvironment throws StateError and we
+  // abort before doing anything else.
+  final CLIStorage storage;
   try {
-    await itemService.commitAll(popularClothingItems);
-  } catch (e) {
-    _print(e);
+    storage = CLIStorage.fromEnvironment(env);
+  } on StateError catch (e) {
+    stderr.writeln('cannot start: $e');
+    exitCode = 1;
+    return;
   }
 
-  try {
-    await repo.businesses.commit(dummyBusiness);
-  } catch (e) {
-    _print(e);
-  }
+  // Build the full service graph. Same bootStrapServices used by the
+  // Flutter app — the CLI and the GUI share every code path below this
+  // line.
+  final services = await bootStrapServices(storage, const CLILogoStore());
 
-  try {
-    await repo.businesses.commit(dummyBusiness1);
-  } catch (e) {
-    _print(e);
-  }
+  // Greeting. Printed once, before the first prompt.
+  stdout
+    ..writeln('finance management — interactive')
+    ..writeln('type "help" for commands, "exit" to quit.')
+    ..writeln();
 
-  try {
-    await repo.customers.commit(dummyCustomer);
-  } catch (e) {
-    _print(e);
-  }
+  // `Repl.run()` yields complete lines as the user types them, and
+  // handles all the terminal editing itself: arrow keys for history,
+  // Home/End, Ctrl+A/E/U/K/Y, and so on. The default validator treats
+  // every newline as a complete statement, which is what we want —
+  // every command is one line.
+  //
+  // prompt: the string shown before the cursor.
+  // maxHistory: in-memory history buffer size. 200 entries is plenty
+  //   for a session and disappears when the process exits.
+  final repl = Repl(prompt: '> ', maxHistory: 200);
 
-  try {
-    await repo.customers.commit(dummyCustomer1);
-  } catch (e) {
-    _print(e);
-  }
+  // `run()` returns a synchronous Iterable<String>. Each iteration
+  // blocks until the user presses Enter. When stdin closes (Ctrl+D on
+  // an empty line), the iterable completes and the loop exits.
+  for (final line in repl.run()) {
+    final trimmed = line.trim();
 
-  try {
-    await invoiceService.commit(
-      DraftInvoice(
-        business: await repo.businesses.findSingleton(),
-        customer: (await repo.customers.findAll()).last,
-        date: DateTime.now(),
-        terms: PaymentTerms.net7,
-        items: (await itemService.findAll()).map((item) {
-          return InvoiceItem(item: item, quantity: item.id.number % 13 + 1);
-        }).toSet(),
-      ),
-    );
-  } catch (e) {
-    _print(e);
-  }
+    // Skip blank lines without dispatching.
+    if (trimmed.isEmpty) continue;
 
-  final invEnt = await invoiceService.findAll();
-  final inv = invEnt?.last;
+    // Two ways to leave. Ctrl+D is handled by the Repl itself.
+    if (trimmed == 'exit' || trimmed == 'quit') break;
 
-  if (inv != null) {
+    // Dispatch to the command table. Any exception from a command
+    // prints a short marker and returns to the prompt — the session
+    // keeps running.
     try {
-      final pay = await repo.payments.commit(
-        DraftPayment(
-          invoiceNumber: inv.documentNumber,
-          method: PaymentMethod.mpesa,
-          amountInCents: 200,
-          reference: "SQJT8U20JK",
-          date: DateTime.timestamp(),
-        ),
-        await invoiceService.balanceCents(inv.documentNumber),
-      );
-      final receipt = await receiptService.generate(invoice: inv, payment: pay);
-      _print('saving invoice....');
-      await invoiceService.saveAsPdf(inv.documentNumber);
-      _print('saving receipt...');
-
-      await receiptService.saveAsPdf(receipt);
+      await dispatch(trimmed, services);
     } catch (e) {
-      _print(e);
+      stdout.writeln('! $e');
     }
   }
-  _print("done");
-}
 
-void _print(dynamic e) {
-  assert(() {
-    // ignore: avoid_print
-    print(e);
-    return true;
-  }());
+  stdout.writeln('bye.');
 }
