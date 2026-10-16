@@ -118,7 +118,7 @@ class ItemRepository implements ItemLookup {
     final tmp = _snapshot;
 
     if (tmp.remove(id) == null) {
-      throw StateError("Item Update failed");
+      throw InvalidState("Item Update failed");
     }
     await add(item, tmp);
   }
@@ -152,7 +152,9 @@ class ItemRepository implements ItemLookup {
     final q = name.toLowerCase();
 
     return _entries.values.where(
-      (it) => (includeDeleted || !it.isDeleted) && it.name.toLowerCase() == q,
+      (it) =>
+          (includeDeleted || !it.isDeleted) &&
+          it.name.toLowerCase().contains(q),
     );
   }
 
