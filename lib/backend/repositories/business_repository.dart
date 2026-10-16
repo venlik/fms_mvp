@@ -125,7 +125,7 @@ class BusinessRepository implements BusinessLookup {
     };
   }
 
-  Future<Business?> findSingleton({bool includeDeleted = false}) async {
+  Future<Business> findSingleton({bool includeDeleted = false}) async {
     await _ensureLoaded();
 
     return _entries.values.firstWhere(
@@ -152,7 +152,7 @@ class BusinessRepository implements BusinessLookup {
 
   ///Replaces an existing business with the newBusiness,
   ///throws [NotFound] if a business with the same id doesn`t exist,
-  ///throws [StateError] if the operation fails,
+  ///throws [InvalidState] if the operation fails,
   Future<void> update(Business newBusiness) async {
     await _ensureLoaded();
     final id = newBusiness.id;
@@ -163,7 +163,7 @@ class BusinessRepository implements BusinessLookup {
     if (tmp.remove(id) != null) {
       await add(newBusiness, tmp);
     } else {
-      throw StateError("Business Edit failed");
+      throw InvalidState("Business Edit failed");
     }
     // await _persistAndLoad(tmp);
   }
@@ -204,23 +204,28 @@ class BusinessRepository implements BusinessLookup {
         .any((b) => b.details == candidate.details);
   }
 
-  Business _deserialize(Map<String, dynamic> json) => Business(
-    id: Identifier<Business>(json['id'] as int),
-    name: json['name'] as String,
-    logo: json['logo'] != null
-        ? Logo(
-            path: (json['logo'] as Map<String, dynamic>)['path'] as String,
-            source: Source.fromLabel(
-              (json['logo'] as Map<String, dynamic>)['source'] as String,
-            ) as Source,
-          )
-        : null,
-    phoneNumber: json['phoneNumber'] as String,
-    email: json['email'] as String,
-    serviceLocation: json['serviceLocation'] as String,
-    configuredCurrency: json['configuredCurrency'] as String,
-    isDeleted: json['isDeleted'] as bool? ?? false,
-  );
+  Business _deserialize(Map<String, dynamic> json) {
+    Logo? logo;
+    final logoJson = json['logo'];
+    if (logoJson != null) {
+      final logoMap = logoJson as Map<String, dynamic>;
+      final src = Source.fromLabel(logoMap['source'] as String);
+      if (src == null) {
+        throw StorageFailure('Unknown logo source: ${logoMap['source']}');
+      }
+      logo = Logo(path: logoMap['path'] as String, source: src);
+    }
+    return Business(
+      id: Identifier<Business>(json['id'] as int),
+      name: json['name'] as String,
+      logo: logo,
+      phoneNumber: json['phoneNumber'] as String,
+      email: json['email'] as String,
+      serviceLocation: json['serviceLocation'] as String,
+      configuredCurrency: json['configuredCurrency'] as String,
+      isDeleted: json['isDeleted'] as bool? ?? false,
+    );
+  }
 
   Map<String, dynamic> _serialize(Business b) => {
     'id': b.id.number,
