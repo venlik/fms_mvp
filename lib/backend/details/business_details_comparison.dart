@@ -10,11 +10,11 @@ mixin BusinessDetailsComparison {
   String get configuredCurrency;
 
   BusinessDetails get details => BusinessDetails(
-    name: name,
+    name: name.toLowerCase().trim(),
     logo: logo,
-    phoneNumber: phoneNumber,
-    email: email,
-    serviceLocation: serviceLocation,
-    configuredCurrency: configuredCurrency,
+    phoneNumber: phoneNumber.trim(),
+    email: email.toLowerCase().trim(),
+    serviceLocation: serviceLocation.toLowerCase().trim(),
+    configuredCurrency: configuredCurrency.trim(),
   );
 }
