@@ -4,6 +4,7 @@ import 'package:finance_management_system/backend/repositories/customer_reposito
 import 'package:finance_management_system/backend/repositories/invoice_repository.dart';
 import 'package:finance_management_system/backend/repositories/item_repository.dart';
 import 'package:finance_management_system/backend/repositories/payment_repository.dart';
+import 'package:finance_management_system/backend/repositories/receipt_repository.dart';
 import 'package:finance_management_system/backend/services/counter_service.dart';
 import 'package:finance_management_system/backend/storage/app_storage.dart';
 
@@ -14,6 +15,7 @@ class Repositories({
   required final ItemRepository items,
   required final InvoiceRepository invoices,
   required final PaymentRepository payments,
+  required final ReceiptRepository receipts,
 }) {}
 
 Future<Repositories> bootstrapRepositories(Storage storage) async {
@@ -45,6 +47,12 @@ Future<Repositories> bootstrapRepositories(Storage storage) async {
     counters: counters,
     invoices: invoices, // only needs InvoiceLookup
   );
+  final receipts = await ReceiptRepository.create(
+    storage: storage,
+    counters: counters,
+    invoices: invoices,
+    payments: payments,
+  );
 
   return Repositories(
     counters: counters,
@@ -53,5 +61,6 @@ Future<Repositories> bootstrapRepositories(Storage storage) async {
     items: items,
     invoices: invoices,
     payments: payments,
+    receipts: receipts,
   );
 }
