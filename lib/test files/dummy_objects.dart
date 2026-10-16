@@ -4,7 +4,8 @@ import 'package:finance_management_system/backend/drafts/draft_item.dart';
 import 'package:finance_management_system/backend/enums/source.dart';
 import 'package:finance_management_system/backend/models/logo.dart';
 
-List<DraftItem> popularClothingItems = [
+List<DraftItem> testItems = [
+  // 1–20: Original items
   DraftItem(
     name: 'Nike T-Shirt',
     description: 'A classic t-shirt from Nike',
@@ -47,13 +48,12 @@ List<DraftItem> popularClothingItems = [
   ),
   DraftItem(
     name: 'Oakley Prescription Sunglasses',
-    description: 'A high-quality pair of prescription sunglasses from Oakley',
+    description: 'High-quality prescription sunglasses from Oakley',
     priceInCents: 1100,
   ),
   DraftItem(
     name: 'Puma Fenty Trainer Shoes',
-    description:
-        'A popular pair of trainer shoes from Puma and Rihanna\'s Fenty line',
+    description: 'Trainer shoes from Puma and Rihanna\'s Fenty line',
     priceInCents: 700,
   ),
   DraftItem(
@@ -68,7 +68,7 @@ List<DraftItem> popularClothingItems = [
   ),
   DraftItem(
     name: 'Reebok Classic Leather Shoes',
-    description: 'A popular pair of classic leather shoes from Reebok',
+    description: 'Classic leather shoes from Reebok',
     priceInCents: 400,
   ),
   DraftItem(
@@ -78,7 +78,7 @@ List<DraftItem> popularClothingItems = [
   ),
   DraftItem(
     name: 'Vans Old Skool Shoes',
-    description: 'A classic pair of skateboarding shoes from Vans',
+    description: 'Classic skateboarding shoes from Vans',
     priceInCents: 300,
   ),
   DraftItem(
@@ -88,7 +88,7 @@ List<DraftItem> popularClothingItems = [
   ),
   DraftItem(
     name: 'New Balance Shoes',
-    description: 'A popular pair of running shoes from New Balance',
+    description: 'Running shoes from New Balance',
     priceInCents: 250,
   ),
   DraftItem(
@@ -105,6 +105,162 @@ List<DraftItem> popularClothingItems = [
     name: 'Chanel Handbag',
     description: 'A luxurious handbag from Chanel',
     priceInCents: 2800,
+  ),
+
+  // 21–30: More clothing
+  DraftItem(
+    name: 'Adidas Track Pants',
+    description: 'Comfortable athletic track pants from Adidas',
+    priceInCents: 650,
+  ),
+  DraftItem(
+    name: 'Zara Denim Jacket',
+    description: 'A modern denim jacket from Zara',
+    priceInCents: 950,
+  ),
+  DraftItem(
+    name: 'H&M Cotton Hoodie',
+    description: 'A soft everyday cotton hoodie from H&M',
+    priceInCents: 350,
+  ),
+  DraftItem(
+    name: 'Tommy Hilfiger Polo',
+    description: 'A stylish casual polo shirt from Tommy Hilfiger',
+    priceInCents: 750,
+  ),
+  DraftItem(
+    name: 'Under Armour Sports Shirt',
+    description: 'A breathable performance shirt from Under Armour',
+    priceInCents: 550,
+  ),
+  DraftItem(
+    name: 'Calvin Klein Boxer Briefs',
+    description: 'Comfortable boxer briefs from Calvin Klein',
+    priceInCents: 450,
+  ),
+  DraftItem(
+    name: 'North Face Puffer Jacket',
+    description: 'A warm insulated puffer jacket from The North Face',
+    priceInCents: 2200,
+  ),
+  DraftItem(
+    name: 'Burberry Trench Coat',
+    description: 'A premium trench coat from Burberry',
+    priceInCents: 6500,
+  ),
+  DraftItem(
+    name: 'Lacoste Crew Neck Sweater',
+    description: 'A classic crew neck sweater from Lacoste',
+    priceInCents: 1300,
+  ),
+  DraftItem(
+    name: 'Carhartt Workwear Jacket',
+    description: 'A durable workwear jacket from Carhartt',
+    priceInCents: 1700,
+  ),
+
+  // 31–40: Footwear
+  DraftItem(
+    name: 'Nike Air Max 90',
+    description: 'Iconic lifestyle sneakers from Nike',
+    priceInCents: 1400,
+  ),
+  DraftItem(
+    name: 'Adidas Ultraboost',
+    description: 'Cushioned running shoes from Adidas',
+    priceInCents: 1600,
+  ),
+  DraftItem(
+    name: 'Dr. Martens Boots',
+    description: 'Durable leather boots from Dr. Martens',
+    priceInCents: 1900,
+  ),
+  DraftItem(
+    name: 'Timberland Boots',
+    description: 'Classic rugged boots from Timberland',
+    priceInCents: 1800,
+  ),
+  DraftItem(
+    name: 'Crocs Classic Clogs',
+    description: 'Lightweight everyday clogs from Crocs',
+    priceInCents: 400,
+  ),
+  DraftItem(
+    name: 'Birkenstock Arizona Sandals',
+    description: 'Comfortable two-strap sandals from Birkenstock',
+    priceInCents: 850,
+  ),
+  DraftItem(
+    name: 'Asics Gel-Kayano',
+    description: 'Supportive running shoes from Asics',
+    priceInCents: 1200,
+  ),
+  DraftItem(
+    name: 'Jordan Retro High',
+    description: 'High-top basketball-inspired sneakers from Jordan',
+    priceInCents: 2100,
+  ),
+  DraftItem(
+    name: 'Clarks Desert Boots',
+    description: 'Timeless suede desert boots from Clarks',
+    priceInCents: 1100,
+  ),
+  DraftItem(
+    name: 'Puma Suede Classic',
+    description: 'Retro suede sneakers from Puma',
+    priceInCents: 650,
+  ),
+
+  // 41–50: Accessories and premium items
+  DraftItem(
+    name: 'Michael Kors Wallet',
+    description: 'A stylish everyday wallet from Michael Kors',
+    priceInCents: 900,
+  ),
+  DraftItem(
+    name: 'Coach Crossbody Bag',
+    description: 'A versatile crossbody bag from Coach',
+    priceInCents: 2400,
+  ),
+  DraftItem(
+    name: 'Fossil Leather Watch',
+    description: 'A classic leather-strap watch from Fossil',
+    priceInCents: 1250,
+  ),
+  DraftItem(
+    name: 'Casio G-Shock Watch',
+    description: 'A rugged digital watch from Casio',
+    priceInCents: 700,
+  ),
+  DraftItem(
+    name: 'Oakley Sports Cap',
+    description: 'A sporty everyday cap from Oakley',
+    priceInCents: 350,
+  ),
+  DraftItem(
+    name: 'New Era Baseball Cap',
+    description: 'A classic fitted baseball cap from New Era',
+    priceInCents: 300,
+  ),
+  DraftItem(
+    name: 'Versace Sunglasses',
+    description: 'Designer sunglasses from Versace',
+    priceInCents: 2200,
+  ),
+  DraftItem(
+    name: 'Montblanc Leather Belt',
+    description: 'A premium leather belt from Montblanc',
+    priceInCents: 1500,
+  ),
+  DraftItem(
+    name: 'Balenciaga Sneakers',
+    description: 'Luxury statement sneakers from Balenciaga',
+    priceInCents: 7500,
+  ),
+  DraftItem(
+    name: 'Louis Vuitton Backpack',
+    description: 'A luxury designer backpack from Louis Vuitton',
+    priceInCents: 8500,
   ),
 ];
 

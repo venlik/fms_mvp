@@ -19,7 +19,7 @@ Future<Services> bootStrapServices(Storage storage, LogoStore store) async {
   final cs = repos.counters;
   final ivs = InvoiceService.of(repos.invoices, repos.payments, storage, store);
   final its = ItemService.of(repos.items);
-  final rs = ReceiptService.of(cs, storage, store);
+  final rs = ReceiptService.of(repos.receipts, storage, store);
   return Services(
     counterService: cs,
     invoiceService: ivs,
