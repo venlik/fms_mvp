@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:finance_management_system/backend/details/payment_details_comparison.dart';
 import 'package:finance_management_system/backend/enums/payment_method.dart';
+import 'package:finance_management_system/backend/exceptions.dart';
 import 'package:finance_management_system/backend/models/document_number.dart';
 import 'package:finance_management_system/backend/models/invoice.dart';
 
@@ -28,12 +29,13 @@ class DraftPayment with PaymentDetailsComparison {
     required this.invoiceNumber,
     this.method = PaymentMethod.cash,
     int amountInCents = 0,
-    this.reference,
+    String? reference,
     this.notes,
     required this.date,
   }) : amountInCents = amountInCents >= 0
            ? amountInCents
-           : throw StateError("amount must be >= 0");
+           : throw InvalidState("amount must be >= 0"),
+       reference = reference?.isEmpty ?? true ? null : reference;
 
   bool get isValid => amountInCents > 0;
 
