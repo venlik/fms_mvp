@@ -18,10 +18,12 @@ import 'package:finance_management_system/backend/storage/app_storage.dart';
 /// nothing about invoices, items, or any domain concept.
 class CounterService {
   final Storage storage;
-  const CounterService(this.storage);
+  CounterService(this.storage);
 
   static const String _key = 'counters';
   static const _group = StorageGroup.counters;
+
+  bool _allocating = false;
 
   Future<int> current(CounterKey key) async {
     final counters = await _readAll();
@@ -29,13 +31,27 @@ class CounterService {
   }
 
   /// Atomically bumps [key] and returns the new value.
-  /// Assumes single-process access (desktop app). See note below.
+  ///
+  /// Safety relies on the caller-side invariant that no two [allocate]
+  /// calls are ever in flight concurrently. The read-modify-write below
+  /// has two `await` points (`_readAll`, `_writeAll`) between which
+  /// another `allocate` could interleave and lose an increment. Today
+  /// every caller is sequential (commit paths are awaited serially),
+  /// so this holds. If that ever changes — batch commits, parallel
+  /// UI actions, a future scheduler — wrap this method in a mutex or
+  /// move counters into memory.
   Future<int> allocate(CounterKey key) async {
-    final counters = await _readAll();
-    final next = (counters[key.id] ?? 0) + 1;
-    counters[key.id] = next;
-    await _writeAll(counters);
-    return next;
+    assert(!_allocating, 'CounterService.allocate called concurrently');
+    _allocating = true;
+    try {
+      final counters = await _readAll();
+      final next = (counters[key.id] ?? 0) + 1;
+      counters[key.id] = next;
+      await _writeAll(counters);
+      return next;
+    } finally {
+      _allocating = false;
+    }
   }
 
   ///deffered API
@@ -80,6 +96,4 @@ class CounterService {
     data[_key] = counters;
     await storage.writeData(_group, data);
   }
-
-  
-  }
+}
