@@ -11,6 +11,8 @@ mixin CustomerDetailsComparison {
   String get phoneNumber;
 
   /// The content-significance view of this customer.
-  CustomerDetails get details =>
-      CustomerDetails(name: name.toLowerCase(), phoneNumber: phoneNumber);
+  CustomerDetails get details => CustomerDetails(
+    name: name.toLowerCase().trim(),
+    phoneNumber: phoneNumber.trim(),
+  );
 }
