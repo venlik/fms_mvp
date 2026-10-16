@@ -36,7 +36,7 @@ class DraftInvoice with InvoiceDetailsComparison {
     this.notes,
   }) : date = date ?? DateTime.now(),
        _items = items?.toSet().toList() ?? [];
-       
+
   @override
   List<InvoiceItem> get items => List.unmodifiable(_items);
 
@@ -85,7 +85,7 @@ class DraftInvoice with InvoiceDetailsComparison {
     }
     final existing = itms[index];
 
-    if (itms.contains(newItem) && existing.quantity == newItem.quantity) {
+    if (existing == newItem) {
       throw AlreadyExists('replacement Item already exists');
     }
     itms[index] = newItem;
@@ -124,7 +124,7 @@ class DraftInvoice with InvoiceDetailsComparison {
   /// sequentially here — the UI never sees them.
   Invoice toInvoice(DocumentNumber<Invoice> number) {
     if (!canIssue) {
-      throw StateError('Draft is not complete');
+      throw InvalidState('Draft is not complete');
     }
 
     return Invoice(
