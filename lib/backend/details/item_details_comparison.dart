@@ -4,6 +4,8 @@ mixin ItemDetailsComparison {
   String get name;
   String get description;
 
-  ItemDetails get details =>
-      ItemDetails(name: name, description: description);
+  ItemDetails get details => ItemDetails(
+    name: name.toLowerCase().trim(),
+    description: description.toLowerCase().trim(),
+  );
 }
