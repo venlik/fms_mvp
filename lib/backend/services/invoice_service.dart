@@ -10,6 +10,8 @@ import 'package:finance_management_system/backend/pdf/document_fonts.dart';
 import 'package:finance_management_system/backend/pdf/invoice_pdf.dart';
 import 'package:finance_management_system/backend/repositories/invoice_repository.dart';
 import 'package:finance_management_system/backend/repositories/payment_repository.dart';
+import 'package:finance_management_system/backend/services/document_previewer.dart';
+import 'package:finance_management_system/backend/services/document_printer.dart';
 import 'package:finance_management_system/backend/storage/app_storage.dart';
 import 'package:finance_management_system/backend/storage/logo_store.dart';
 
@@ -19,12 +21,7 @@ class InvoiceService {
   final Storage _storage;
   final LogoStore _store;
 
-  InvoiceService._(
-    this._invoices,
-    this._payments,
-    this._storage,
-    this._store,
-  );
+  InvoiceService._(this._invoices, this._payments, this._storage, this._store);
 
   factory InvoiceService.of(
     InvoiceRepository ir,
@@ -56,25 +53,39 @@ class InvoiceService {
   Future<Iterable<Invoice>?> findAll() async => await _invoices.findAll();
 
   Future<void> saveAsPdf(
-    DocumentNumber<Invoice> ref, [
+    DocumentNumber<Invoice> ref, {
     String? name,
     DocumentFonts? fonts,
-  ]) async {
+  }) async {
     final invoice = await _invoices.findByNumber(ref);
-    if (invoice == null) {
-      throw NotFound('Invoice ${ref.toString()} not found');
-    }
-    final ipdf = InvoicePdf();
-    //final pdf = await ipdf.generate(invoice, _store,fonts: fonts);
-    final pdf = await ipdf.generate(
-      invoice: invoice,
-      store: _store,
-      docNumber: invoice.documentNumber.toString(),
-      fonts: fonts,
+    if (invoice == null) throw NotFound('Invoice $ref not found');
+    final bytes = await _renderInvoice(invoice, fonts: fonts);
+    final resolvedName = name ?? "INV_${invoice.documentNumber}.pdf";
+    await _storage.saveDocument(name: resolvedName, bytes: bytes);
+  }
+
+  Future<void> preview(
+    Invoice invoice,
+    DocumentPreviewer previewer, {
+    DocumentFonts? fonts,
+  }) async {
+    final bytes = await _renderInvoice(invoice, fonts: fonts);
+    await previewer.preview(
+      bytes: bytes,
+      title: "INV_${invoice.documentNumber}",
     );
-    final pdfBytes = await ipdf.bytes(pdf);
-    final resolvedName = name ?? "INV_${invoice.documentNumber.id}.pdf";
-    await _storage.saveDocument(name: resolvedName, bytes: pdfBytes);
+  }
+
+  Future<void> print(
+    Invoice invoice,
+    DocumentPrinter printer, {
+    DocumentFonts? fonts,
+  }) async {
+    final bytes = await _renderInvoice(invoice, fonts: fonts);
+    await printer.print(
+      bytes: bytes,
+      jobName: "INV_${invoice.documentNumber}.pdf",
+    );
   }
 
   /// Balance due on [number]: invoice total minus payments received.
@@ -90,7 +101,17 @@ class InvoiceService {
     return invoice.totalCents - paid;
   }
 
-  void preview(Invoice invoice) {}
-
-  void print(Invoice invoice) {}
+  Future<List<int>> _renderInvoice(
+    Invoice invoice, {
+    DocumentFonts? fonts,
+  }) async {
+    final ipdf = InvoicePdf();
+    final doc = await ipdf.generate(
+      invoice: invoice,
+      store: _store,
+      docNumber: invoice.documentNumber.toString(),
+      fonts: fonts,
+    );
+    return ipdf.bytes(doc);
+  }
 }
