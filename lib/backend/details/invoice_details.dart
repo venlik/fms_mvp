@@ -35,7 +35,8 @@ class InvoiceDetails with Equatable {
   }) : items = _sorted(items);
 
   static List<InvoiceItem> _sorted(Set<InvoiceItem> items) {
-    final list = items.toList()..sort((a, b) => a.itemId.compareTo(b.itemId));
+    final list = items.toList()
+      ..sort((a, b) => a.item.id.number.compareTo(b.item.id.number));
     return List.unmodifiable(list);
   }
 
