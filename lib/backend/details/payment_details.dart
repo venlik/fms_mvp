@@ -11,7 +11,7 @@ import 'package:finance_management_system/backend/models/invoice.dart';
 ///   • [method]         — how it was paid
 ///   • [invoiceNumber]  — which invoice it settles
 ///   • [reference]      — external reference (M-Pesa code, cheque no.)
-///
+///   • [date]      — original timestamp of the payment recording(with upto microsecond accuracy)
 /// Note: if [reference] is empty or generic (e.g. "cash"), two
 /// otherwise-identical payments are indistinguishable. That's the
 /// limit of the data model — the reference is the disambiguator.
