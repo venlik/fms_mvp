@@ -20,10 +20,10 @@ class MetaRow {
 
 /// Shared skeleton for invoice/receipt PDFs.
 ///
-/// Subclasses supply the pieces that differ:
-///   • [documentLabel]  — "INVOICE" / "RECEIPT"
-///   • [metaRows]       — the meta block below the parties section
-///   • [notesBlock]     — the closing text at the bottom
+/// Subclasses supply the pieces that differ:<br>
+///   • [documentLabel]  — "INVOICE" / "RECEIPT"<br>
+///   • [metaRows]       — the meta block below the parties section<br>
+///   • [notesBlock]     — the closing text at the bottom<br>
 ///
 /// Everything else — header, parties, items table, totals row,
 /// page footer, fonts, theme, chunking — is shared.
@@ -52,7 +52,7 @@ abstract class DocumentPdf {
     final theme = _buildTheme(fonts);
 
     final doc = pw.Document(
-      title: '$documentLabel ${invoice.documentNumber}',
+      title: '$documentLabel $docNumber',
       author: invoice.business.name,
       creator: 'finance_management_system',
       theme: theme,
@@ -290,7 +290,7 @@ abstract class DocumentPdf {
     final currency = invoice.business.configuredCurrency;
 
     final items = invoice.items.toList()
-      ..sort((a, b) => a.itemId.compareTo(b.itemId));
+      ..sort((a, b) => a.item.id.number.compareTo(b.item.id.number));
 
     if (items.isEmpty) {
       return pw.Text('No items.', style: const pw.TextStyle(fontSize: 9.5));
