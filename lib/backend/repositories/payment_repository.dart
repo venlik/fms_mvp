@@ -67,7 +67,7 @@ class PaymentRepository implements PaymentLookup {
       throw NotFound('Invoice ${draft.invoiceNumber.id} not found');
     }
     if (draft.amountInCents > invoiceBalance) {
-      throw StateError("Payment amount exceeds Invoice balance");
+      throw InvalidState("Payment amount exceeds Invoice balance");
     }
     final n = await _counters.allocate(CounterKey.payment);
     final payment = Payment(
@@ -155,26 +155,41 @@ class PaymentRepository implements PaymentLookup {
     final raw = await _storage.readData(_group);
     final list = raw['payments'];
     if (list is! List) return;
-    _entries
-      ..clear()
-      ..addEntries(
-        list.cast<Map<String, dynamic>>().map((json) {
-          final p = _deserialize(json);
-          return MapEntry(p.id, p);
-        }),
-      );
+    _entries.clear();
+    for (final json in list.cast<Map<String, dynamic>>()) {
+      try {
+        final p = await _deserialize(json);
+        _entries[p.id] = p;
+      } on NotFound catch (_) {
+        assert(() {
+          // ignore: avoid_print
+          print("skipped: invoice not found"); //TODO: return result instead
+          return true;
+        }());
+        continue;
+      } catch (e) {
+        rethrow;
+      }
+    }
   }
 
-  Payment _deserialize(Map<String, dynamic> json) => Payment(
-    id: Identifier<Payment>(json['id'] as int),
-    amountInCents: json['amountInCents'] as int,
-    method: PaymentMethod.values.byName(json['method'] as String),
-    invoiceNumber: DocumentNumber(json['invoiceNumber'] as int),
-    date: DateTime.parse(json['date'] as String),
-    reference: json['reference'] as String?,
-    notes: json['notes'] as String?,
-    isDeleted: json['isDeleted'] as bool? ?? false,
-  );
+  Future<Payment> _deserialize(Map<String, dynamic> json) async {
+    final invNo = DocumentNumber<Invoice>(json['invoiceNumber'] as int);
+    final inv = await _invoices.findByNumber(invNo, includeDeleted: true);
+    if (inv == null) {
+      throw NotFound("invoice of id ${invNo.id} not found");
+    }
+    return Payment(
+      id: Identifier<Payment>(json['id'] as int),
+      amountInCents: json['amountInCents'] as int,
+      method: PaymentMethod.values.byName(json['method'] as String),
+      invoiceNumber: invNo,
+      date: DateTime.parse(json['date'] as String),
+      reference: json['reference'] as String?,
+      notes: json['notes'] as String?,
+      isDeleted: json['isDeleted'] as bool? ?? false,
+    );
+  }
 
   Map<String, dynamic> _serialize(Payment p) => {
     'id': p.id.number,
