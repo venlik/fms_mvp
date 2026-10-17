@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "finance_management_system" "\0"
+            VALUE "CompanyName", "Pace" "\0"
+            VALUE "FileDescription", "pace.windows" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "finance_management_system" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "finance_management_system.exe" "\0"
-            VALUE "ProductName", "finance_management_system" "\0"
+            VALUE "InternalName", "Pace" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Pace. All rights reserved." "\0"
+            VALUE "OriginalFilename", "Pace.exe" "\0"
+            VALUE "ProductName", "Pace" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
